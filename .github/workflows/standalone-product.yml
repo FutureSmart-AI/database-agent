@@ -1,0 +1,134 @@
+name: Standalone product checks
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: standalone-product-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  access-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only the pinned SQL parser
+        run: python -m pip install --disable-pip-version-check sqlglot==26.14.0
+      - name: Verify S60 boundaries with synthetic in-memory data and executor tripwires
+        run: python -m unittest discover -s tests/backend -p test_access_policy.py -v
+  selection-policy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only pinned selector and API-test dependencies
+        run: python -m pip install --disable-pip-version-check sqlglot==26.14.0 fastapi==0.150.0 pydantic==2.14.1
+      - name: Verify actual selector and canonical non-streaming denial route offline
+        run: |
+          python -m unittest discover -s tests/backend -p test_selection_policy.py -v
+          python -m unittest discover -s tests/backend -p test_fresh_policy_writes.py -v
+  evaluation-reliability:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16.6-alpine
+        env:
+          POSTGRES_USER: eval_fixture_admin
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: eval_reliability
+        ports:
+          - 127.0.0.1:15439:5432
+        options: >-
+          --health-cmd "pg_isready -U eval_fixture_admin -d eval_reliability"
+          --health-interval 2s --health-timeout 2s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only the pinned parser and PostgreSQL test driver
+        run: python -m pip install --disable-pip-version-check sqlglot==26.14.0 psycopg2-binary==2.9.13
+      - name: Test evaluator contracts and actual SQLite SQL controls
+        run: python -m unittest discover -s tests/evaluation -p test_reliability.py -v
+      - name: Execute references and deliberately wrong SQL on fresh PostgreSQL
+        env:
+          EVAL_RELIABILITY_DISPOSABLE: '1'
+          EVAL_RELIABILITY_PORT: '15439'
+        run: python tests/evaluation/check_reliability.py --backend postgres --report evaluation-reliability-postgres.json
+      - name: Retain complete synthetic outcomes (not model accuracy)
+        uses: actions/upload-artifact@v4
+        with:
+          name: evaluation-reliability-postgres
+          path: evaluation-reliability-postgres.json
+          retention-days: 7
+  verify:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version-file: frontend/package.json
+      - name: Verify single-repository source boundaries
+        run: python -m unittest discover -s tests/deployment -v
+      - name: Install frontend test dependencies
+        working-directory: frontend
+        run: bun install --frozen-lockfile
+      - name: Test the existing wizard and service boundary
+        working-directory: frontend
+        run: bun x vitest run src/data/__tests__/serviceBoundary.test.ts src/components/home/__tests__/NewAgentWizard.test.tsx
+      - name: Test chart contracts and live/stored result paths
+        working-directory: frontend
+        run: |
+          bun x vitest run src/components/conversations/__tests__/normalizeResultChart.test.ts src/components/conversations/__tests__/stackedContract.test.tsx src/components/conversations/__tests__/ResultCard.test.tsx src/components/conversations/__tests__/toChartPoints.test.ts src/components/conversations/__tests__/livePayload.test.tsx src/components/conversations/__tests__/Thread.test.tsx src/components/conversations/__tests__/Nl2sqlSessionThread.test.tsx src/data/__tests__/liveTurnDiagnostics.test.tsx src/data/__tests__/nl2sqlChat.test.ts
+          bun run typecheck
+      - name: Generate disposable local configuration
+        run: python deploy/configure.py
+      - name: Seed private-memory context canaries
+        run: |
+          mkdir -p backend/agent/internal frontend/src/internal
+          printf 'private-memory-boundary-canary' > backend/agent/internal/private-memory-canary.txt
+          printf 'private-memory-boundary-canary' > frontend/src/internal/private-memory-canary.txt
+      - name: Build both product images from this checkout
+        run: docker compose build
+      - name: Verify private memory is absent from build contexts and images
+        run: |
+          for context in backend frontend; do
+          docker build --quiet --tag "database-agent-context-check:$context" --file - "$context" <<'DOCKERFILE'
+          FROM python:3.11-slim
+          COPY . /context
+          DOCKERFILE
+          docker run --rm "database-agent-context-check:$context" python -c 'from pathlib import Path; assert not any(p.name == "internal" and p.is_dir() for p in Path("/context").rglob("*"))'
+          done
+          docker compose run --rm --no-deps --entrypoint python api -c 'from pathlib import Path; assert not Path("/app/internal").exists(); assert not Path("/app/agent/internal").exists(); from agent.utils.model_profiles import load_profile; assert load_profile()["profile"] == "futuresmart-recommended-v1"'
+          docker compose run --rm --no-deps --entrypoint sh ui -c 'test ! -e /usr/share/nginx/html/internal'
+      - name: Fresh metadata and source fixture
+        run: |
+          docker compose up -d metadata-db sample-db qdrant
+          docker compose run --rm bootstrap
+          docker compose run --rm bootstrap
+          docker compose run --rm -v "${PWD}/tests:/tests:ro" api python /tests/run.py
+          docker compose run --rm evaluate --fixture-only
+      - name: Start the product
+        run: |
+          docker compose up -d api ui
+          curl --fail --retry 10 --retry-delay 2 --retry-all-errors --retry-max-time 45 --connect-timeout 3 --max-time 5 http://localhost:3001/standalone-login/ > /dev/null
+          curl --fail http://localhost:18000/nl2sql/api/health > /dev/null
+      - name: Stop disposable services
+        if: always()
+        run: docker compose down

@@ -1,0 +1,16 @@
+node_modules/
+.next/
+out/
+dist/
+coverage/
+playwright-report/
+test-results/
+cypress/screenshots/
+cypress/videos/
+*.tsbuildinfo
+.env
+.env.*
+!.env.example
+next-env.d.ts
+.playwright-mcp/
+cypress/reports/

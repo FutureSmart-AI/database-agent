@@ -1,0 +1,26 @@
+{
+  "version": "relational-v1",
+  "as_of_exclusive": "2026-02-01T00:00:00Z",
+  "tables": 4,
+  "source_rows": 29,
+  "content_encoding": "Compact UTF-8 JSON, sorted table names, rows by primary key, ISO dates",
+  "content_sha256": "7da811a9283ca71cb6fb1924cde4fe9f7112934544493ac867f21ef7bebcaf07",
+  "files": {
+    "cases.json": "67649d51d9f59118bf08f73ca91593127ebe7af6c5be61184a58422e7145b777",
+    "data.sql": "414ff8990813f25bad6bf9b5142f20bd715ebe55eef1c5613859579d92586038",
+    "qualified.sql": "ae2b1cdb41bddda3416695655ee5421a475de2eafb75d34eebe3f9e8a0aefe9e",
+    "reference/complete_pairs.sql": "5edebbaa7fbdddc2396b19294a5369b5ae0007d6b2a4f7ad4a7f329c7d875bfe",
+    "reference/conversion_region.sql": "e85b6e2fb677ca97181f4d85331acd667d429579d052cacfb80d3140a6f9c796",
+    "reference/currency_gross.sql": "6847affbbe4ce45b57741ce460678f9ee312bbeeccc38073c9c1ee1776ab067c",
+    "reference/customer_totals.sql": "8f9abd0fb3a3e3f8926af433db5eabaad98cf617de25601892204e42ede91d78",
+    "reference/net_region.sql": "529a602179d73d045fa9d111dd0526756c9f0a7456a8c61932cd75ba0cc066bd",
+    "reference/overall_conversion.sql": "8908f7a4951281966918c941845ed86b19b5deb90709ddeba8578a3f63ec5083",
+    "reference/undefined_cohort.sql": "d7c2e48f0d2a1c76c0a205564d3184d63601f9fe15e4cab18fbd9a2998d837a1",
+    "reference/zero_refunds.sql": "69d4225f959b9ab293bd1c9d56f1ea1b094cf0aefba9fcc0576063b3f9b24b75",
+    "RULES.md": "59d09071bee702fba5bfd5478c9ed1779fcbbe0e5b8f4a4e3f64739740a1742d",
+    "schema.sql": "fba6dee9fc8f572fac2f7cfa175c22383bc7b72eeb2423145644e5b3d4ed108e",
+    "wrong_join.sql": "7286091ac60b2176d485ca686ab032e62310c802e90d8da2e05b9d2c1ba541f3",
+    "wrong_macro.sql": "77c8f2e3cf99f5e92fad1db15e915aaf2b81ca9990106136b3058ed7757a9c93",
+    "wrong_zero_source.sql": "66b8076efc22534ef36034622bfe97a9bba3b4eeee9747b74f9a1a650a617f8d"
+  }
+}

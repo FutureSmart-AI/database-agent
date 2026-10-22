@@ -1,0 +1,400 @@
+/* NL2SQL design tokens — the values from the product's design artifact.
+ *
+ * Imported by `src/app/globals.css`.
+ *
+ * Two layers live here:
+ *
+ *   1. `--n2s-*` tokens plus the `@theme inline` block that turns them into
+ *      utilities (`bg-n2s-plane`, `text-n2s-ink-2`, `font-display`, …).
+ *   2. A `.n2s-root` block that re-points the Tailwind palette variables this
+ *      product already spells out in its markup (`text-slate-500`,
+ *      `bg-indigo-600`, …) at the artifact's ramp. Tailwind v4 compiles
+ *      `text-slate-500` to `color: var(--color-slate-500)`, so redefining that
+ *      variable on the product's root repaints every one of those utilities
+ *      inside this subtree and nowhere else.
+ *
+ * That scoping is the whole point: the agent UI imports this file globally, so
+ * a palette override on `:root` — or any rule on a bare element — would repaint
+ * that application too. Everything below is either a token or is nested under
+ * `.n2s-root`.
+ *
+ * The artifact ships a dark theme as well. It is kept here as `--n2s-*` values
+ * under `[data-theme="dark"]` for surfaces drawn from the tokens directly, but
+ * the palette remap stays light-only: this product's markup carries no `dark:`
+ * variants, so inverting the ramp under `prefers-color-scheme` would flip
+ * backgrounds without flipping the text sat on them.
+ */
+
+:root {
+  /* Surfaces */
+  --n2s-plane: #f5f7fc;
+  --n2s-card: #ffffff;
+  --n2s-card-2: #f7f9fd;
+  --n2s-card-3: #eff3fa;
+
+  /* Text */
+  --n2s-ink: #111827;
+  --n2s-ink-2: #4b5563;
+  --n2s-ink-3: #6b7280;
+
+  /* Hairlines */
+  --n2s-line: #e3e9f2;
+  --n2s-line-2: #edf1f7;
+
+  /* FutureSmart blue */
+  --n2s-pri: #2563eb;
+  --n2s-pri-ink: #1d4ed8;
+  --n2s-pri-wash: #eaf1fe;
+  --n2s-pri-wash-2: #dce8fd;
+
+  /* Status. Blue and amber measure ΔE 35.4 apart in OKLab and are safe
+   * together; ok-green and err-red are not — they collapse under
+   * deuteranopia — so pass/fail is never two touching fills, only a badge
+   * with an icon and a label. */
+  --n2s-amber: #b87c15;
+  --n2s-amber-wash: #fdf4e3;
+  --n2s-ok: #15803d;
+  --n2s-ok-wash: #e7f6ec;
+  --n2s-warn: #92660a;
+  --n2s-warn-wash: #fcf3e0;
+  --n2s-err: #b91c1c;
+  --n2s-err-wash: #fceaea;
+
+  /* Categorical series, in draw order */
+  --n2s-series-1: #2563eb;
+  --n2s-series-2: #b87c15;
+  --n2s-series-3: #1d7a4e;
+  --n2s-series-4: #7c3aed;
+
+  /* Ordinal (sequential) ramp */
+  --n2s-ord-1: #98b6ef;
+  --n2s-ord-2: #6e97e7;
+  --n2s-ord-3: #4674d6;
+  --n2s-ord-4: #2854b4;
+  --n2s-ord-5: #173b82;
+
+  /* Chart chrome */
+  --n2s-grid: #e8edf5;
+  --n2s-axis: #d5dde9;
+
+  /* Elevation */
+  --n2s-sh-low:
+    0 1px 2px rgba(17, 24, 39, 0.05), 0 0 0 1px rgba(17, 24, 39, 0.04);
+  --n2s-sh-mid: 0 12px 32px -12px rgba(17, 24, 39, 0.22);
+  --n2s-sh-hi: 0 24px 60px -20px rgba(17, 24, 39, 0.32);
+
+  /* Type. The `--font-n2s-*` variables are published by `next/font` in each
+   * layout that renders this product; the quoted names are the fallback for
+   * any surface reached before those load. */
+  --n2s-font-display:
+    var(--font-n2s-display, "Plus Jakarta Sans"), "Segoe UI", Helvetica,
+    sans-serif;
+  --n2s-font-body:
+    var(--font-n2s-body, "Manrope"), "Segoe UI", Helvetica, Arial, sans-serif;
+  --n2s-font-mono:
+    var(--font-n2s-mono, "JetBrains Mono"), ui-monospace, Menlo, Consolas,
+    monospace;
+}
+
+:root[data-theme="dark"] {
+  --n2s-plane: #0f1218;
+  --n2s-card: #161a23;
+  --n2s-card-2: #1c212c;
+  --n2s-card-3: #232936;
+  --n2s-ink: #eef2f8;
+  --n2s-ink-2: #a8b2c3;
+  --n2s-ink-3: #8a94a6;
+  --n2s-line: #2a3140;
+  --n2s-line-2: #232935;
+  --n2s-pri: #5a8af0;
+  --n2s-pri-ink: #8ab0ff;
+  --n2s-pri-wash: #182238;
+  --n2s-pri-wash-2: #1e2b45;
+  --n2s-amber: #c98500;
+  --n2s-amber-wash: #241d0f;
+  --n2s-ok: #2fa968;
+  --n2s-ok-wash: #13251a;
+  --n2s-warn: #c98500;
+  --n2s-warn-wash: #241d0f;
+  --n2s-err: #e06055;
+  --n2s-err-wash: #2a1717;
+  --n2s-series-1: #5a8af0;
+  --n2s-series-2: #c98500;
+  --n2s-series-3: #2fa968;
+  --n2s-series-4: #8b72e8;
+  --n2s-ord-1: #274a96;
+  --n2s-ord-2: #3a66c4;
+  --n2s-ord-3: #5e8ae0;
+  --n2s-ord-4: #8aaeee;
+  --n2s-ord-5: #b6cef8;
+  --n2s-grid: #242b38;
+  --n2s-axis: #303845;
+  --n2s-sh-low:
+    0 1px 2px rgba(0, 0, 0, 0.5), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  --n2s-sh-mid: 0 14px 36px -14px rgba(0, 0, 0, 0.7);
+  --n2s-sh-hi: 0 26px 64px -22px rgba(0, 0, 0, 0.8);
+}
+
+/* `inline` keeps the generated utilities pointing at the custom properties
+ * above rather than resolving them once at build time. */
+@theme inline {
+  --color-n2s-plane: var(--n2s-plane);
+  --color-n2s-card: var(--n2s-card);
+  --color-n2s-card-2: var(--n2s-card-2);
+  --color-n2s-card-3: var(--n2s-card-3);
+  --color-n2s-ink: var(--n2s-ink);
+  --color-n2s-ink-2: var(--n2s-ink-2);
+  --color-n2s-ink-3: var(--n2s-ink-3);
+  --color-n2s-line: var(--n2s-line);
+  --color-n2s-line-2: var(--n2s-line-2);
+  --color-n2s-pri: var(--n2s-pri);
+  --color-n2s-pri-ink: var(--n2s-pri-ink);
+  --color-n2s-pri-wash: var(--n2s-pri-wash);
+  --color-n2s-pri-wash-2: var(--n2s-pri-wash-2);
+  --color-n2s-amber: var(--n2s-amber);
+  --color-n2s-amber-wash: var(--n2s-amber-wash);
+  --color-n2s-ok: var(--n2s-ok);
+  --color-n2s-ok-wash: var(--n2s-ok-wash);
+  --color-n2s-warn: var(--n2s-warn);
+  --color-n2s-warn-wash: var(--n2s-warn-wash);
+  --color-n2s-err: var(--n2s-err);
+  --color-n2s-err-wash: var(--n2s-err-wash);
+
+  --shadow-n2s-low: var(--n2s-sh-low);
+  --shadow-n2s-mid: var(--n2s-sh-mid);
+  --shadow-n2s-hi: var(--n2s-sh-hi);
+
+  --font-display: var(--n2s-font-display);
+}
+
+/* ── product scope ─────────────────────────────────────────────────────────
+ * Everything below applies only inside the NL2SQL subtree.
+ *
+ * `n2s-scope` carries the tokens, the palette and the type. `n2s-root` is that
+ * plus the plane behind a full screen. They are separate because the shared
+ * Modal portals its panel to `document.body`, which is outside the shell's
+ * subtree: a dialog re-enters the scope with `n2s-scope` and keeps its own
+ * white panel, where `n2s-root` would paint the plane inside it.
+ */
+.n2s-scope,
+.n2s-root {
+  color: var(--n2s-ink);
+  font-family: var(--n2s-font-body);
+  font-size: 14px;
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+
+  /* `font-sans` / `font-mono` utilities inside the product resolve to the
+   * artifact's families, and so does anything that inherits from here. */
+  --font-sans: var(--n2s-font-body);
+  --font-mono: var(--n2s-font-mono);
+
+  /* Neutral ramp — the artifact's plane / card / hairline / ink values, in the
+   * slots this product's markup already asks for. */
+  --color-slate-50: var(--n2s-card-2);
+  --color-slate-100: var(--n2s-card-3);
+  --color-slate-200: var(--n2s-line);
+  --color-slate-300: var(--n2s-axis);
+  --color-slate-400: var(--n2s-ink-3);
+  --color-slate-500: var(--n2s-ink-2);
+  --color-slate-600: #374151;
+  --color-slate-700: #1f2937;
+  --color-slate-800: #161c27;
+  --color-slate-900: var(--n2s-ink);
+  --color-gray-50: var(--n2s-card-2);
+  --color-gray-100: var(--n2s-card-3);
+  --color-gray-200: var(--n2s-line);
+  --color-gray-300: var(--n2s-axis);
+  --color-gray-400: var(--n2s-ink-3);
+  --color-gray-500: var(--n2s-ink-2);
+  --color-gray-600: #374151;
+  --color-gray-700: #1f2937;
+  --color-gray-800: #161c27;
+  --color-gray-900: var(--n2s-ink);
+
+  /* Accent. The artifact is FutureSmart blue throughout, so the indigo, blue
+   * and sky utilities this product mixes all land on the one hue — the mid
+   * steps come off the artifact's ordinal ramp. */
+  --color-indigo-50: var(--n2s-pri-wash);
+  --color-indigo-100: var(--n2s-pri-wash-2);
+  --color-indigo-200: #c5d9fc;
+  --color-indigo-300: var(--n2s-ord-1);
+  --color-indigo-400: var(--n2s-ord-2);
+  --color-indigo-500: var(--n2s-pri);
+  --color-indigo-600: var(--n2s-pri);
+  --color-indigo-700: var(--n2s-pri-ink);
+  --color-indigo-800: var(--n2s-ord-4);
+  --color-indigo-900: var(--n2s-ord-5);
+  --color-blue-50: var(--n2s-pri-wash);
+  --color-blue-100: var(--n2s-pri-wash-2);
+  --color-blue-200: #c5d9fc;
+  --color-blue-300: var(--n2s-ord-1);
+  --color-blue-400: var(--n2s-ord-2);
+  --color-blue-500: var(--n2s-pri);
+  --color-blue-600: var(--n2s-pri);
+  --color-blue-700: var(--n2s-pri-ink);
+  --color-blue-800: var(--n2s-ord-4);
+  --color-blue-900: var(--n2s-ord-5);
+  --color-sky-50: var(--n2s-pri-wash);
+  --color-sky-100: var(--n2s-pri-wash-2);
+  --color-sky-500: var(--n2s-pri);
+  --color-sky-600: var(--n2s-pri);
+  --color-sky-700: var(--n2s-pri-ink);
+
+  /* Amber — the artifact's second series, and the colour of a "pending" pill. */
+  --color-amber-50: var(--n2s-amber-wash);
+  --color-amber-100: #fae9c8;
+  --color-amber-200: #f2d9a6;
+  --color-amber-500: var(--n2s-amber);
+  --color-amber-600: var(--n2s-amber);
+  --color-amber-700: var(--n2s-warn);
+  --color-amber-800: #7a550a;
+  --color-amber-900: #5e4108;
+  --color-yellow-50: var(--n2s-amber-wash);
+  --color-yellow-600: var(--n2s-amber);
+  --color-yellow-700: var(--n2s-warn);
+  --color-orange-50: var(--n2s-warn-wash);
+  --color-orange-100: #f8e6be;
+  --color-orange-600: var(--n2s-warn);
+  --color-orange-700: #7a550a;
+
+  /* Success */
+  --color-emerald-50: var(--n2s-ok-wash);
+  --color-emerald-100: #cfebd8;
+  --color-emerald-200: #a8dab9;
+  --color-emerald-400: #4ca971;
+  --color-emerald-500: var(--n2s-series-3);
+  --color-emerald-600: var(--n2s-ok);
+  --color-emerald-700: #146b36;
+  --color-emerald-900: #0b3f20;
+  --color-green-50: var(--n2s-ok-wash);
+  --color-green-100: #cfebd8;
+  --color-green-500: var(--n2s-series-3);
+  --color-green-600: var(--n2s-ok);
+  --color-green-700: #146b36;
+  --color-teal-500: var(--n2s-series-3);
+
+  /* Failure */
+  --color-rose-50: var(--n2s-err-wash);
+  --color-rose-100: #f8d5d5;
+  --color-rose-200: #f0b4b4;
+  --color-rose-500: #d13a3a;
+  --color-rose-600: var(--n2s-err);
+  --color-rose-700: #9f1717;
+  --color-rose-900: #5e0f0f;
+  --color-red-50: var(--n2s-err-wash);
+  --color-red-100: #f8d5d5;
+  --color-red-200: #f0b4b4;
+  --color-red-500: #d13a3a;
+  --color-red-600: var(--n2s-err);
+  --color-red-700: #9f1717;
+  --color-red-900: #5e0f0f;
+
+  /* Fourth series */
+  --color-violet-50: #f3eefe;
+  --color-violet-100: #e7ddfc;
+  --color-violet-200: #d4c4f9;
+  --color-violet-500: var(--n2s-series-4);
+  --color-violet-600: #6d28d9;
+  --color-violet-700: #5b21b6;
+  --color-purple-50: #f3eefe;
+  --color-purple-100: #e7ddfc;
+  --color-purple-200: #d4c4f9;
+  --color-purple-500: var(--n2s-series-4);
+  --color-purple-600: #6d28d9;
+  --color-purple-700: #5b21b6;
+}
+
+.n2s-root {
+  background: var(--n2s-plane);
+}
+
+/* Headings carry the display face; body copy and controls stay on the body
+ * face. `.n2s-display` is for the title-shaped elements that are not headings
+ * — a card's wordmark, an agent's name, a conversation's subject. */
+:is(.n2s-scope, .n2s-root) :is(h1, h2, h3, h4),
+:is(.n2s-scope, .n2s-root) .n2s-display {
+  font-family: var(--n2s-font-display);
+  letter-spacing: -0.018em;
+}
+
+:is(.n2s-scope, .n2s-root) :focus-visible {
+  outline: 2px solid var(--n2s-pri);
+  outline-offset: 2px;
+  border-radius: 4px;
+}
+:is(.n2s-scope, .n2s-root) ::selection {
+  background: var(--n2s-pri-wash-2);
+  color: var(--n2s-pri-ink);
+}
+:is(.n2s-scope, .n2s-root) :is(input, select, textarea, button) {
+  font-family: inherit;
+}
+
+/* The three dots trailing a run stage that is still going. Kept with the other
+ * product tokens and scoped like everything else below. */
+@keyframes n2s-thinking-dot {
+  0%,
+  72%,
+  100% {
+    transform: translateY(0);
+    opacity: 0.32;
+  }
+  36% {
+    transform: translateY(-3px);
+    opacity: 1;
+  }
+}
+:is(.n2s-scope, .n2s-root) .n2s-thinking-dot {
+  animation: n2s-thinking-dot 1.25s ease-in-out infinite;
+}
+:is(.n2s-scope, .n2s-root) .n2s-thinking-dot-2 {
+  animation-delay: 160ms;
+}
+:is(.n2s-scope, .n2s-root) .n2s-thinking-dot-3 {
+  animation-delay: 320ms;
+}
+/* The label of a stage that is still going: a highlight sweeping across the
+ * word, so the row reads as working rather than as a step that has stalled.
+ *
+ * The highlight is a literal white rather than a surface token: on this
+ * product's white card the band reads as the letters thinning out as it passes
+ * and filling back in behind it, and on the dark theme's card it reads as a
+ * glow. Either way it is the sweep that carries the motion, not the colour. */
+@keyframes n2s-shimmer-text {
+  from {
+    background-position: 160% 0;
+  }
+  to {
+    background-position: -60% 0;
+  }
+}
+:is(.n2s-scope, .n2s-root) .n2s-shimmer-text {
+  background: linear-gradient(
+    100deg,
+    var(--n2s-ink) 0%,
+    var(--n2s-ink) 38%,
+    #ffffff 50%,
+    var(--n2s-ink) 62%,
+    var(--n2s-ink) 100%
+  );
+  background-size: 220% 100%;
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+  animation: n2s-shimmer-text 1.9s linear infinite;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  :is(.n2s-scope, .n2s-root) .n2s-thinking-dot {
+    animation: none;
+    opacity: 0.75;
+  }
+  /* Back to a plain colour: a clipped gradient frozen mid-sweep leaves half
+     the word in the highlight and half out. */
+  :is(.n2s-scope, .n2s-root) .n2s-shimmer-text {
+    background: none;
+    animation: none;
+    color: var(--n2s-ink);
+  }
+}

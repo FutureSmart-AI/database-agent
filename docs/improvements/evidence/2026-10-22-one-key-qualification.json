@@ -1,0 +1,88 @@
+{
+  "date_IST": "2026-10-22",
+  "status": "limited_fresh_install_accepted",
+  "tested_application_source": "a349b68fb6ab92316e06e5658244d4f19badae36",
+  "profile": "futuresmart-recommended-v1",
+  "installation": "Clean source export, fresh metadata/sample/vector stores, complete UI and backend; existing background jobs execute in the API",
+  "required_CI": {
+    "run": 39736082550,
+    "jobs": 4,
+    "result": "all_success"
+  },
+  "provider_presence": {
+    "OPENAI_API_KEY": true,
+    "GOOGLE_API_KEY": false,
+    "GROQ_API_KEY": false,
+    "ANTHROPIC_API_KEY": false,
+    "DEEPSEEK_API_KEY": false,
+    "MINIMAX_API_KEY": false
+  },
+  "fixture": {
+    "description": "Shipped read-only PostgreSQL orders sample",
+    "rows": 4,
+    "reference": [
+      {
+        "region": "North",
+        "total_order_amount": 250.0
+      },
+      {
+        "region": "South",
+        "total_order_amount": 200.0
+      }
+    ]
+  },
+  "verified": {
+    "fresh_bootstrap_start": "PASS",
+    "normal_login_and_default_UI_wizard": "PASS",
+    "template_model_inheritance": "Stored prompt only; effective SQL model OpenAI/Sol/Responses/low",
+    "strict_table_policy": "orders stored as JSON boolean true; no manual patch",
+    "UI_question_SQL_full_typed_rows_and_rendered_bar": "PASS",
+    "full_five_service_restart_same_three_volumes": "PASS",
+    "GET_only_saved_reopen_answer_SQL_rows_chart": "PASS",
+    "direct_API_question": "HTTP200/is_answeredtrue; full2typed numeric rows; chart/followups disabled",
+    "advanced_file_override": "Only final-answer operation changed from Luna to Sol; actual final-answer node model and constructed Responses/low client verified"
+  },
+  "ordinary_submissions": {
+    "used": 2,
+    "limit": 2,
+    "first_closed_window_used": 0,
+    "UI": 1,
+    "direct_API": 1,
+    "retries": 0
+  },
+  "recorded_server_seconds": {
+    "UI_gpt_response_time": 22.956987142562866,
+    "UI_db_fetch_time": 0.012388229370117188,
+    "API_gpt_response_time": 14.159103631973267,
+    "API_db_fetch_time": 0.00238037109375,
+    "scope": "Recorded server fields; not browser end-to-end latency, development duration or a performance benchmark"
+  },
+  "preserved_failures": [
+    "Earlier required CI stopped before Docker on an unchanged wizard assertion; cause unknown",
+    "Earlier API metadata-writer integer/boolean mismatch retained as a separate witness",
+    "First fresh UI setup saved a Gemini SQL override despite an OpenAI-only environment; detected before any ordinary question and corrected in source"
+  ],
+  "limits": [
+    "Two questions on four synthetic rows establish installation/connectivity and the exercised UI/API flow, not general answer accuracy or a benchmark Pass",
+    "Saved-response top-level is_answered was null although live response and stored row were true; SQL/rows/chart were intact",
+    "Cosmetic conversation header showed zero tables despite verified one-table source setup; deferred",
+    "HTTP request log lines were absent; exact provider HTTP attempt count remains unknown. Constructor counts are not HTTP counts",
+    "No live alternative-provider capability matrix or existing-vector migration was tested",
+    "All17 original research verdicts unchanged; no PR77/PR79 expansion"
+  ],
+  "cleanup": {
+    "own_temporary_containers_volumes_images_removed": true,
+    "source_upload_and_tunnel_removed": true,
+    "host_verified_stopped_IST": "2026-10-22T12:39:44.128816+05:30",
+    "production_changed": false,
+    "local_private_login_transport_files_removed": true
+  },
+  "release": {
+    "private_PR": "Historical private review, not imported into this repository",
+    "project_license": "Apache-2.0 approved for this public source release",
+    "third_party_fonts": "Existing SIL OFL notices included",
+    "public_repository": "FutureSmart-AI/database-agent; publication approved 22 October 2026 IST",
+    "publication": "approved; initial source publication separately verified",
+    "production_deployment": "not performed"
+  }
+}

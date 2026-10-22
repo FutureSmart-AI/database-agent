@@ -1,0 +1,11 @@
+# Preserve the imported frontend snapshot on Windows and Linux checkouts.
+frontend/** text=auto eol=lf
+frontend/**/*.woff2 -text
+# Versioned evaluation fingerprints are exact LF bytes on every checkout.
+tests/evaluation/reliability/fixtures/** text eol=lf
+# Tracked private memory must never enter fresh-history source snapshots.
+internal export-ignore
+internal/** export-ignore
+# Hosted operational actions do not belong to the standalone public snapshot.
+.github/workflows/frontend-deploy.yml export-ignore
+.github/workflows/frontend-rollback.yml export-ignore

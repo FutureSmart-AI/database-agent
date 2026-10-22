@@ -1,0 +1,44 @@
+{
+  "classification": "Public maintainer synthetic-fixture summary, not an original AI Demos benchmark artifact",
+  "record": "DA-004",
+  "run_date_IST": "2026-10-20",
+  "source_identifier": "356b679",
+  "fixture": "Four synthetic orders included in the supported sample_sales installation",
+  "independent_browser_turns": 1,
+  "retries": 0,
+  "expected_totals": {
+    "North": 250,
+    "South": 200
+  },
+  "actual_complete_typed_result": {
+    "columns": [
+      {
+        "name": "region",
+        "type": "string"
+      },
+      {
+        "name": "total_sales",
+        "type": "number"
+      }
+    ],
+    "rows": [
+      {
+        "region": "South",
+        "total_sales": 200.0
+      },
+      {
+        "region": "North",
+        "total_sales": 250.0
+      }
+    ],
+    "row_count": 2,
+    "truncated": false
+  },
+  "primary_answer_and_saved_ack_seconds": 10.921999999998661,
+  "chart_and_eof_seconds": 14.5,
+  "answer_SQL_rows_chart_identity_survived_full_reload": true,
+  "primary_debug_disabled_SQL_rows_sent": false,
+  "SQL_rows_available_after_saved_reconciliation": true,
+  "scope": "One controlled happy path; not a paired speed comparison, original SaaS result, p95 or production release acceptance",
+  "private_receipt_sha256": "afda78ce277e3ea9423c6d3e5526b9cee55a93cfd32c119e2c055424c8f00cdc"
+}

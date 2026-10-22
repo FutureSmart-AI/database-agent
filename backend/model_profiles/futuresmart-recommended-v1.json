@@ -1,0 +1,31 @@
+{
+  "version": "futuresmart-recommended-v1",
+  "roles": {
+    "complex": {"provider": "openai", "model": "gpt-6.1-sol"},
+    "light": {"provider": "openai", "model": "gpt-6-luna", "temperature": 0.0}
+  },
+  "operations": {
+    "sql_agent.router": "light",
+    "sql_agent.db_router": "complex",
+    "sql_agent.select_table": "complex",
+    "sql_agent.sql_generation": "complex",
+    "sql_agent.entity_extraction": "light",
+    "sql_agent.entity_expansion": "light",
+    "sql_agent.entity_refinement": "light",
+    "sql_agent.rephrase_answer": "light",
+    "sql_agent.check_pandas": "light",
+    "sql_agent.follow_up_questions": "light",
+    "sql_agent.post_processing": "light",
+    "pandas_agent.default": "complex",
+    "chart_agent.router": "light",
+    "chart_agent.suggest": "light",
+    "chart_agent.mapping": "light",
+    "descriptions.default": "light",
+    "csv_agent.answer": "light",
+    "reports.analysis": "light"
+  },
+  "embeddings": {
+    "fewshot": {"provider": "openai", "model": "text-embedding-3-small", "dimensions": 1536},
+    "high_cardinality": {"provider": "openai", "model": "text-embedding-3-small", "dimensions": 1536}
+  }
+}

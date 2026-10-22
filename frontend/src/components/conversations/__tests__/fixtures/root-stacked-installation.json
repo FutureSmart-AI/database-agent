@@ -1,0 +1,71 @@
+{
+  "provenance": "Exact chart block and SQL/result from root synthetic D023 sample; not AI Demos TC53. Full raw receipt stays private parent workspace.",
+  "chart": {
+    "suggestion": "Stacked Bar Chart",
+    "data": [
+      {
+        "index": "North",
+        "segments": [
+          {
+            "category": "North",
+            "value": 250
+          }
+        ]
+      },
+      {
+        "index": "South",
+        "segments": [
+          {
+            "category": "South",
+            "value": 200
+          }
+        ]
+      }
+    ],
+    "metadata": {
+      "title": "Total Revenue by Region",
+      "x_axis": {
+        "label": "Region",
+        "field": "region"
+      },
+      "y_axis": {
+        "label": "Revenue",
+        "field": "total_revenue"
+      },
+      "legend": {
+        "show": true,
+        "position": "right",
+        "title": "region"
+      },
+      "colors": {
+        "North": "#3498db",
+        "South": "#e74c3c"
+      },
+      "stack_type": "normal",
+      "chart_orientation": "horizontal"
+    }
+  },
+  "sql": "SELECT region, SUM(amount) AS total_revenue FROM orders GROUP BY region;",
+  "db_result": {
+    "columns": [
+      {
+        "name": "region"
+      },
+      {
+        "name": "total_revenue"
+      }
+    ],
+    "rows": [
+      {
+        "region": "South",
+        "total_revenue": 200
+      },
+      {
+        "region": "North",
+        "total_revenue": 250
+      }
+    ],
+    "row_count": 2
+  },
+  "answer": "## Total Revenue by Region\n\n| Region | Total Revenue |\n|--------|---------------|\n| **North** | **250.0** |\n| **South** | **200.0** |\n\n> The data shows that the **North** region generated **250.0** in revenue, while the **South** region generated **200.0**."
+}

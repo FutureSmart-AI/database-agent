@@ -1,0 +1,48 @@
+{
+  "id": "DA-007",
+  "date_IST": "2026-10-21",
+  "classification": "Maintainer synthetic evaluation engineering summary; no model benchmark",
+  "fixture_version": "relational-v1",
+  "as_of_exclusive": "2026-02-01T00:00:00Z",
+  "source_rows": 29,
+  "tables": 4,
+  "manifest_sha256": "586c40a2037e69f2326c054264a111ad24cd520bf4df582bc4c924dfe877ffbb",
+  "content_sha256": "7da811a9283ca71cb6fb1924cde4fe9f7112934544493ac867f21ef7bebcaf07",
+  "original_failure": "Old checker accepted swapped and10x-wrong API/prose with correct SQL replay; original isolated witness retained privately",
+  "local_focused_tests_after_parser_correction": 14,
+  "candidate_parser_failure_retained": "Preamble currency symbols and ambiguous -$value/accounting signs were accepted before focused correction. No actual model/product output involved. Independent review found the candidate checker accepted not-unavailable contradictions and an invented spelled-out rating before the unavailable-format correction. Those first candidate receipts remain private.",
+  "independent_acceptance": "Source controls reviewed at60dca9b: procedural goldens8/8,14focused tests,28 independent checks (6 positive,22 adverse) with no outcome mismatches after candidate corrections. Not a product release, model benchmark or deployment.",
+  "provider_product_UI_calls": 0,
+  "runtime_product_changes": false,
+  "historical_verdicts": "unchanged",
+  "limits": [
+    "Finite fixture, not arbitrary semantic equivalence",
+    "Narrow narrative format: unsupported correct prose requires manual review",
+    "Public regression fixture, not unseen model benchmark",
+    "No API/UI/model accuracy or production acceptance"
+  ],
+  "initial_postgres": {
+    "executed_head": "d3400a38a92bc94952c93c7fc6bcab407590945a",
+    "CI": "historical private CI run 39562779144; original link omitted",
+    "job": "evaluation-reliability",
+    "actual_reference_queries": 8,
+    "authored_unavailable_validator_controls": 1,
+    "successful_wrong_queries_rejected": 20,
+    "complete_pair_rows": 55,
+    "content_unchanged": true,
+    "schema_rollback_verified": true
+  },
+  "postgres": {
+    "executed_head": "60dca9be68eba7834979014cd04d20e2d2bfe4da",
+    "CI": "historical private CI run 39563484302; original link omitted",
+    "job": "evaluation-reliability",
+    "job_measured_seconds": 19,
+    "actual_reference_queries": 8,
+    "authored_unavailable_validator_controls": 1,
+    "successful_wrong_queries_rejected": 20,
+    "complete_pair_rows": 55,
+    "content_unchanged": true,
+    "schema_rollback_verified": true
+  },
+  "verified_source_CI": "Both jobs successful on60dca9be68eba7834979014cd04d20e2d2bfe4da; this follow-up changes documentation only."
+}

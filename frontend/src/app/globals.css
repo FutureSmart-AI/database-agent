@@ -1,0 +1,182 @@
+/* Global stylesheet for the Database Agent UI.
+ *
+ * Carried over from the agent UI's own `globals.css` — same Tailwind version,
+ * tokens, prose and animation rules — so the product reads as one design
+ * system with the rest of FutureSmart. Tailwind v4 scans the whole repository,
+ * which now includes the shared UI kit under `src/platform/`. */
+@import "tailwindcss";
+@plugin "@tailwindcss/typography";
+
+/* The product's own tokens, palette and type — the values from its design
+ * artifact. */
+@import "../styles/theme.css";
+
+:root {
+  --background: #ffffff;
+  --foreground: #171717;
+}
+
+body {
+  color: var(--foreground);
+  background: var(--background);
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+/* Drawer slide-in from right */
+@keyframes slideInRight {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+/* Status dot blink */
+@keyframes dotBlink {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.3;
+  }
+}
+
+/* Skeleton shimmer animation */
+@keyframes shimmer {
+  0% {
+    transform: translateX(-100%);
+  }
+
+  100% {
+    transform: translateX(100%);
+  }
+}
+
+/* Typography overrides for markdown prose */
+.prose {
+  --tw-prose-body: #111827;
+  --tw-prose-pre-bg: #1a1a2e;
+  --tw-prose-pre-code: #a8b5c8;
+  --tw-prose-quote-borders: #8b8bde;
+  --tw-prose-quotes: #6b7280;
+}
+.prose :where(code):not(:where([class~="not-prose"], [class~="not-prose"] *)) {
+  background: #f5f5f8;
+  border: 1px solid #e5e5ec;
+  border-radius: 4px;
+  padding: 1px 5px;
+  font-size: 12px;
+  font-weight: 400;
+}
+
+/* Speech-to-text recording indicator */
+@keyframes stt-wave {
+  0%,
+  100% {
+    transform: scaleY(0.35);
+  }
+  50% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes nl2sql-answer-in {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateY(0);
+  }
+  50% {
+    transform: translateY(-1px);
+  }
+}
+
+@keyframes nl2sql-code-shimmer {
+  0%,
+  100% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0.82;
+  }
+}
+
+@keyframes nl2sql-bar-grow {
+  0%,
+  34% {
+    transform: scaleY(0.08);
+  }
+  50%,
+  100% {
+    transform: scaleY(1);
+  }
+}
+
+@keyframes nl2sql-row-in {
+  0%,
+  100% {
+    opacity: 1;
+    transform: translateX(0);
+  }
+  50% {
+    background: rgb(240 249 255);
+  }
+}
+
+.nl2sql-status-dot {
+  animation: dotBlink 1.8s ease-in-out infinite;
+}
+.nl2sql-answer {
+  animation: nl2sql-answer-in 7s ease-in-out infinite;
+}
+.nl2sql-code {
+  animation: nl2sql-code-shimmer 7s ease-in-out infinite;
+}
+.nl2sql-bar {
+  transform-origin: bottom;
+  animation: nl2sql-bar-grow 7s cubic-bezier(0.22, 1, 0.36, 1) infinite;
+}
+.nl2sql-bar-2 {
+  animation-delay: 80ms;
+}
+.nl2sql-bar-3 {
+  animation-delay: 160ms;
+}
+.nl2sql-bar-4 {
+  animation-delay: 240ms;
+}
+.nl2sql-bar-5 {
+  animation-delay: 320ms;
+}
+.nl2sql-result {
+  animation: nl2sql-row-in 7s ease-out infinite;
+}
+.nl2sql-result-2 {
+  animation-delay: 100ms;
+}
+.nl2sql-result-3 {
+  animation-delay: 200ms;
+}
+.stt-wave-bar {
+  transform-origin: center;
+  animation: stt-wave 1s ease-in-out infinite;
+}
+@media (prefers-reduced-motion: reduce) {
+  .stt-wave-bar,
+  .nl2sql-status-dot,
+  .nl2sql-answer,
+  .nl2sql-code,
+  .nl2sql-bar,
+  .nl2sql-result {
+    animation: none;
+  }
+
+  .stt-wave-bar {
+    transform: scaleY(0.6);
+  }
+}

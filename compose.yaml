@@ -1,0 +1,100 @@
+name: database-agent-local
+x-api: &api
+  build:
+    context: ./backend
+  image: database-agent-local:dev
+  env_file: .env
+  environment:
+    ENV_FILE: /app/.env
+    MODE: standalone
+    OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+    GOOGLE_API_KEY: ${GOOGLE_API_KEY:-}
+    GROQ_API_KEY: ${GROQ_API_KEY:-}
+    ANTHROPIC_API_KEY: ${ANTHROPIC_API_KEY:-}
+    DEEPSEEK_API_KEY: ${DEEPSEEK_API_KEY:-}
+    MINIMAX_API_KEY: ${MINIMAX_API_KEY:-}
+    # All metadata clients and Alembic use this same isolated address.
+    DATABASE_URL: postgresql+asyncpg://metadata:local-metadata-only@metadata-db:5432/database_agent
+    POSTGRES_HOST: metadata-db
+    POSTGRES_PORT: 5432
+    POSTGRES_USER: metadata
+    POSTGRES_PASSWORD: local-metadata-only
+    POSTGRES_DB_NAME: database_agent
+  volumes:
+    - ./.env:/app/.env:ro
+    - ./backend/model_config.json:/app/model_config.json:ro
+  depends_on:
+    metadata-db:
+      condition: service_healthy
+    qdrant:
+      condition: service_started
+    sample-db:
+      condition: service_healthy
+services:
+  ui:
+    build:
+      context: ./frontend
+      dockerfile: Dockerfile
+    ports:
+      - "127.0.0.1:3001:80"
+    depends_on:
+      api:
+        condition: service_healthy
+  metadata-db:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_USER: metadata
+      POSTGRES_PASSWORD: local-metadata-only
+      POSTGRES_DB: database_agent
+    volumes:
+      - metadata:/var/lib/postgresql/data
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U metadata -d database_agent]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  sample-db:
+    image: postgres:16.6-alpine
+    environment:
+      POSTGRES_USER: fixture_admin
+      POSTGRES_PASSWORD: local-fixture-admin-only
+      POSTGRES_DB: sample_sales
+    volumes:
+      - sample:/var/lib/postgresql/data
+      - ./deploy/sample.sql:/docker-entrypoint-initdb.d/fixture.sql:ro
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U fixture_admin -d sample_sales]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  qdrant:
+    image: qdrant/qdrant:v1.15.1
+    volumes:
+      - vectors:/qdrant/storage
+  bootstrap:
+    <<: *api
+    profiles: [tools]
+    command: [python, -m, standalone.bootstrap]
+  evaluate:
+    <<: *api
+    profiles: [tools]
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./backend/model_config.json:/app/model_config.json:ro
+      - ./tests:/tests:ro
+    entrypoint: [python, /tests/evaluation/run.py]
+    command: []
+  api:
+    <<: *api
+    command: [uvicorn, main:app, --host, 0.0.0.0, --port, '8000']
+    ports:
+      - '127.0.0.1:18000:8000'
+    healthcheck:
+      test: [CMD, python, -c, "import urllib.request; urllib.request.urlopen('http://localhost:8000/nl2sql/api/health', timeout=3)"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
+volumes:
+  metadata:
+  sample:
+  vectors:

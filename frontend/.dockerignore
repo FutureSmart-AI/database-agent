@@ -1,0 +1,17 @@
+# Runtime/build source only; operational material stays outside the image.
+**
+!Dockerfile
+!package.json
+!bun.lock
+!next.config.ts
+!postcss.config.mjs
+!tsconfig.json
+!src/
+!src/**
+!nginx.conf
+**/__tests__/
+**/.env
+**/.env.*
+**/*.log
+# Private product memory is excluded even if nested in UI source later.
+**/internal/

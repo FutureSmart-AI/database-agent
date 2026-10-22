@@ -1,0 +1,79 @@
+{
+  "date_IST": "2026-10-22",
+  "status": "offline_candidate_runtime_unaccepted",
+  "profile": "futuresmart-recommended-v1",
+  "synthetic_HTTP_only": true,
+  "live_provider_calls": 0,
+  "ordinary_query_submissions": 0,
+  "tests": {
+    "model_profile": {
+      "methods": 10,
+      "unittest_seconds": 17.287,
+      "result": "PASS",
+      "extra_control": "Actual SDK plain Responses block-list and Chat string normalize to the same text"
+    },
+    "selection": {
+      "methods": 12,
+      "unittest_seconds": 0.609,
+      "result": "PASS",
+      "extra_control": "Actual nonstream API exposes invalid model configuration as structured400, no SQL/model dispatch"
+    },
+    "existing_openai_adapter": {
+      "methods": 5,
+      "unittest_seconds": 3.621,
+      "result": "PASS"
+    },
+    "access_policy": {
+      "methods": 12,
+      "unittest_seconds": 4.411,
+      "result": "PASS"
+    },
+    "source_packaging": {
+      "methods": 10,
+      "unittest_seconds": 3.647,
+      "result": "PASS"
+    },
+    "ecs_task_helper": {
+      "methods": 6,
+      "unittest_seconds": 0.003,
+      "result": "PASS",
+      "first_failure": "Existing reference test still expected Google/Groq by default; expectation aligned with explicit single-provider contract"
+    }
+  },
+  "installed_SDKs": {
+    "langchain-openai": "1.0.3",
+    "openai": "2.54.0"
+  },
+  "source_sha256": {
+    "backend/model_profiles/futuresmart-recommended-v1.json": "01157924936ae39aeee73def491f755b536b2bbd49459c570040e2830db81f34",
+    "backend/agent/utils/model_profiles.py": "66e4c1b511923de0863c98f1b4d58ee40682312090e72d08ae220b7db5f08e95",
+    "tests/backend/test_model_profiles.py": "feaa7d3d04d45e5d2fc235b18558724e68c116a37b873085ed3e22da615ba03a",
+    "tests/backend/test_selection_policy.py": "bb0d6d5f7d435e719ef9ac212ee226e2f7e2c21494ae07556f0c07961494daf5",
+    "backend/api/v1/routers/chat.py": "754fbc5e7afe30b250cd4926850d6ccff55d80537bd6357d6fef563f77585c0d",
+    "deploy/aws/render_task.py": "74b3040b0a3734da7c4e04dd6e97dbfc0dc0b0e3b859b53982cc2399def1a3a3"
+  },
+  "first_failure": "Initial fixture removed Windows SystemRoot, causing SDK SSL initialization errors before transport; fixture corrected.",
+  "preservation": "API prompt strings and existing prompt/security/answerability/execution sources compared unchanged.",
+  "limits": [
+    "Real structured schemas, actual SDK request serialization and synthetic responses; no live provider acceptance",
+    "Fresh-install UI, SQL/full rows, chart, saved/restart/reopen and direct API remain pending",
+    "Existing research verdicts and prior failed runtime ledger unchanged"
+  ],
+  "clean_export_v1": {
+    "files": 816,
+    "no_git_packaging_methods": 10,
+    "no_git_packaging_seconds": 12.92,
+    "no_git_profile_methods": 9,
+    "no_git_profile_seconds": 7.565,
+    "fresh_git_packaging_methods": 10,
+    "fresh_git_packaging_seconds": 1.035,
+    "result": "PASS",
+    "limit": "v1 source artifact before final structured configuration-error response; v2 qualification recorded separately"
+  },
+  "final_source_packaging": {
+    "methods": 12,
+    "unittest_seconds": 6.779,
+    "result": "PASS",
+    "scope": "Source tree, private exclusions, preservation receipt, ECS default and explicit provider refs"
+  }
+}

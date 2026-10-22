@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "retrieved_date_IST": "2026-10-21",
+  "source": "https://aidemos.com/benchmarks/ai-database-agents/tools/futuresmart-ai-database-agent",
+  "scope": "All17 currently published scenario Results, explicitly authorized. Not an aggregate accuracy score or17 independent single-question executions.",
+  "historical_build": "Not exposed by hosted product",
+  "results": [
+    {
+      "scenario_slug": "find-reported-bad-answer",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/find-reported-bad-answer",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Target exchange found in logs and Activity; five-query scale only.",
+      "current_work_relationship": "Historical control; exact current replay not established.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "failed-question-surfacing",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/failed-question-surfacing",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Failures view empty while unsupported questions were marked answered.",
+      "current_work_relationship": "DA-001 handles explicit unsupported outcomes; end-to-end analytics classification remains unverified. PR79 saved flags are a separate candidate.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "plain-fact-or-short-list",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/plain-fact-or-short-list",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Plain prose and a count grid agreed on100 orders.",
+      "current_work_relationship": "Historical presentation control, not a current database recount.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-answer-needs-a-summary-and-its-detail-together",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-answer-needs-a-summary-and-its-detail-together",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Overall revenue paired with seven-category table and chart.",
+      "current_work_relationship": "DA-002 renderer fix released separately; no historical scenario upgrade.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "same-answer-different-format",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/same-answer-different-format",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Chart-only follow-up changed values and refund filtering and denied chart rendering.",
+      "current_work_relationship": "DA-002 fixes a separate renderer defect; DA-003/PR77 semantic continuity remains unaccepted.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "customer-corrects-information-given-earlier",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/customer-corrects-information-given-earlier",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "June correction replaced July without carrying forward the earlier period.",
+      "current_work_relationship": "Historical corrected-period control; no new implementation.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-follow-up-is-ambiguous",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-follow-up-is-ambiguous",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Ambiguous comparison follow-up was interpreted without clarification.",
+      "current_work_relationship": "No accepted exact ambiguity fix or current replay.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-user-changes-direction-mid-conversation",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-user-changes-direction-mid-conversation",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Overall cancellation request became state-level refund rates.",
+      "current_work_relationship": "Existing DA-003/PR77 metric and scope work remains unaccepted.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-user-narrows-what-they-just-asked",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-user-narrows-what-they-just-asked",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Narrowing retained the original date window and added Texas.",
+      "current_work_relationship": "Preserve historical control and separate ordering/pagination caveats.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "an-excluded-table-is-needed-to-answer-the-question",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/an-excluded-table-is-needed-to-answer-the-question",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Refusal accompanied excluded returns SQL/read and a zero result.",
+      "current_work_relationship": "DA-008: scoped fail-closed/CTE source independently accepted at562db70 after full CI39605744198; not deployed and original Fail unchanged.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-answer-is-available-in-the-connected-data",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-answer-is-available-in-the-connected-data",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 4,
+      "published_observation_summary": "Four connected-data questions returned the recorded reference answers.",
+      "current_work_relationship": "Different test set; evaluator reliability does not establish a fresh model benchmark Pass.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-connected-data-cannot-answer-the-question",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-connected-data-cannot-answer-the-question",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Unsupported review count was replaced with a zero from an unrelated activity log.",
+      "current_work_relationship": "DA-001 released with separate staging/production controls; original benchmark Fail remains.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "business-defined-term",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/business-defined-term",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Answer stated its revenue definition and SQL matched that interpretation.",
+      "current_work_relationship": "Historical definition-disclosure control; cross-turn preservation remains separate.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "the-users-wording-doesnt-match-how-the-values-are-stored",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-users-wording-doesnt-match-how-the-values-are-stored",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Voucher wording missed stored matching payment values and returned empty.",
+      "current_work_relationship": "Value grounding remains unresolved; no benchmark-specific synonym mapping.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "relative-date-report",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/relative-date-report",
+      "original_verdict_literal": "Fail",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Initial relative-window count shown, but saving/data-change/rerun comparison was not demonstrated.",
+      "current_work_relationship": "Existing report source does not prove historical rerun; evidence/method limits preserved.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "definition-correction",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/definition-correction",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Repeated and paraphrased questions retained the corrected cancellation exclusion.",
+      "current_work_relationship": "Historical in-conversation rule control, not cross-session training proof.",
+      "fresh_exact_benchmark_replay": false
+    },
+    {
+      "scenario_slug": "standing-rule-persistence",
+      "published_result_url": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/standing-rule-persistence",
+      "original_verdict_literal": "Pass",
+      "published_test_case_count": 1,
+      "published_observation_summary": "Two later answers retained one standing exclusion rule.",
+      "current_work_relationship": "Historical limited-turn control; no broad persistent-learning claim.",
+      "fresh_exact_benchmark_replay": false
+    }
+  ]
+}

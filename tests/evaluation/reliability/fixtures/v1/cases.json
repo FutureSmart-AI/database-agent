@@ -1,0 +1,658 @@
+{
+  "version": "relational-v1",
+  "as_of_exclusive": "2026-02-01T00:00:00Z",
+  "cases": [
+    {
+      "id": "net_region",
+      "question": "January completed USD net sales in cents by active-customer region, refunds strictly before as-of2026-02-01.",
+      "supported": true,
+      "common": true,
+      "reference": "reference/net_region.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "region",
+          "kind": "text",
+          "nullable": false
+        },
+        {
+          "name": "net_cents",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "USD_cent"
+        }
+      ],
+      "expected": [
+        [
+          "North",
+          4200
+        ],
+        [
+          "South",
+          4000
+        ]
+      ],
+      "negative": [
+        {
+          "id": "cancelled_included",
+          "replace_once": [
+            "o.status = 'completed'",
+            "o.status IN ('completed', 'cancelled')"
+          ]
+        },
+        {
+          "id": "inactive_included",
+          "replace_once": [
+            "c.active = 1",
+            "c.active IN (0, 1)"
+          ]
+        },
+        {
+          "id": "end_inclusive",
+          "replace_once": [
+            "o.ordered_on < '2026-02-01'",
+            "o.ordered_on <= '2026-02-01'"
+          ]
+        },
+        {
+          "id": "start_previous_day",
+          "replace_once": [
+            "o.ordered_on >= '2026-01-01'",
+            "o.ordered_on >= '2025-12-31'"
+          ]
+        },
+        {
+          "id": "future_refund_included",
+          "replace_once": [
+            "refunded_on < '2026-02-01'",
+            "refunded_on < '2026-03-01'"
+          ]
+        },
+        {
+          "id": "currency_mixed",
+          "replace_once": [
+            "o.currency = 'USD'",
+            "o.currency IN ('USD', 'EUR')"
+          ]
+        },
+        {
+          "id": "dollars_as_cents",
+          "replace_once": [
+            "SUM(net_cents) AS net_cents",
+            "SUM(net_cents) / 100.0 AS net_cents"
+          ]
+        },
+        {
+          "id": "wrong_order",
+          "replace_once": [
+            "ORDER BY region",
+            "ORDER BY region DESC"
+          ]
+        },
+        {
+          "id": "join_multiplication",
+          "file": "wrong_join.sql",
+          "common": false
+        }
+      ]
+    },
+    {
+      "id": "conversion_region",
+      "question": "Active customers with at least one qualified order / all active customers, by region, percent rounded to2decimals.",
+      "supported": true,
+      "common": true,
+      "reference": "reference/conversion_region.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "region",
+          "kind": "text",
+          "nullable": false
+        },
+        {
+          "name": "population",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer"
+        },
+        {
+          "name": "converters",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer"
+        },
+        {
+          "name": "conversion_percent",
+          "kind": "decimal",
+          "nullable": false,
+          "unit": "percent",
+          "scale": 2
+        }
+      ],
+      "expected": [
+        [
+          "North",
+          3,
+          2,
+          "66.67"
+        ],
+        [
+          "South",
+          1,
+          1,
+          "100.00"
+        ]
+      ],
+      "negative": [
+        {
+          "id": "orders_as_customers",
+          "replace_all": [
+            "COUNT(DISTINCT q.customer_id)",
+            "COUNT(q.order_id)"
+          ]
+        },
+        {
+          "id": "joined_rows_denominator",
+          "replace_all": [
+            "COUNT(DISTINCT c.customer_id)",
+            "COUNT(*)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "overall_conversion",
+      "question": "Weighted conversion over all active customers; not the unweighted average of regional percentages.",
+      "supported": true,
+      "common": true,
+      "reference": "reference/overall_conversion.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "population",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer"
+        },
+        {
+          "name": "converters",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer"
+        },
+        {
+          "name": "conversion_percent",
+          "kind": "decimal",
+          "nullable": false,
+          "unit": "percent",
+          "scale": 2
+        }
+      ],
+      "expected": [
+        [
+          4,
+          3,
+          "75.00"
+        ]
+      ],
+      "negative": [
+        {
+          "id": "macro_average",
+          "file": "wrong_macro.sql",
+          "common": true
+        }
+      ]
+    },
+    {
+      "id": "customer_totals",
+      "question": "Keep active customers with no qualified orders: count0, sum NULL (not zero).",
+      "supported": true,
+      "common": true,
+      "reference": "reference/customer_totals.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "customer_id",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer_id"
+        },
+        {
+          "name": "order_count",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "order"
+        },
+        {
+          "name": "net_cents",
+          "kind": "integer",
+          "nullable": true,
+          "unit": "USD_cent"
+        }
+      ],
+      "expected": [
+        [
+          1,
+          2,
+          3200
+        ],
+        [
+          2,
+          1,
+          1000
+        ],
+        [
+          3,
+          1,
+          4000
+        ],
+        [
+          5,
+          0,
+          null
+        ]
+      ],
+      "negative": [
+        {
+          "id": "missing_no_order_customer",
+          "replace_once": [
+            "LEFT JOIN qualified",
+            "JOIN qualified"
+          ]
+        },
+        {
+          "id": "null_as_zero",
+          "replace_once": [
+            "SUM(q.net_cents) AS net_cents",
+            "COALESCE(SUM(q.net_cents), 0) AS net_cents"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "currency_gross",
+      "question": "January completed gross item cents of active customers, separately by currency; no FX conversion.",
+      "supported": true,
+      "common": false,
+      "reference": "reference/currency_gross.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "currency",
+          "kind": "text",
+          "nullable": false
+        },
+        {
+          "name": "gross_cents",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "currency_cent"
+        }
+      ],
+      "expected": [
+        [
+          "EUR",
+          7000
+        ],
+        [
+          "USD",
+          9500
+        ]
+      ],
+      "negative": [
+        {
+          "id": "currency_row_omitted",
+          "replace_once": [
+            "o.status = 'completed'",
+            "o.status = 'completed' AND o.currency = 'USD'"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "undefined_cohort",
+      "question": "Conversion for regionWest: no active customers means population0/converters0/undefined percent NULL.",
+      "supported": true,
+      "common": true,
+      "reference": "reference/undefined_cohort.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "population",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer"
+        },
+        {
+          "name": "converters",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer"
+        },
+        {
+          "name": "conversion_percent",
+          "kind": "decimal",
+          "nullable": true,
+          "unit": "percent",
+          "scale": 2
+        }
+      ],
+      "expected": [
+        [
+          0,
+          0,
+          null
+        ]
+      ],
+      "negative": [
+        {
+          "id": "undefined_as_zero",
+          "replace_once": [
+            "ROUND(100.0 * COUNT(DISTINCT q.customer_id) / NULLIF(COUNT(DISTINCT c.customer_id), 0), 2)",
+            "COALESCE(ROUND(100.0 * COUNT(DISTINCT q.customer_id) / NULLIF(COUNT(DISTINCT c.customer_id), 0), 2), 0)"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "zero_refunds",
+      "question": "Actual refunds from2026-01-26 inclusive to2026-02-01 exclusive: a supported count with value0.",
+      "supported": true,
+      "common": false,
+      "reference": "reference/zero_refunds.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "refund_count",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "refund"
+        }
+      ],
+      "expected": [
+        [
+          0
+        ]
+      ],
+      "negative": [
+        {
+          "id": "irrelevant_orders",
+          "file": "wrong_zero_source.sql",
+          "common": false
+        }
+      ]
+    },
+    {
+      "id": "complete_pairs",
+      "question": "All customer/item ID pairs, including inactive customers:55rows, ordered by both IDs; preview50 is incomplete.",
+      "supported": true,
+      "common": false,
+      "reference": "reference/complete_pairs.sql",
+      "ordered": true,
+      "columns": [
+        {
+          "name": "customer_id",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "customer_id"
+        },
+        {
+          "name": "item_id",
+          "kind": "integer",
+          "nullable": false,
+          "unit": "item_id"
+        }
+      ],
+      "expected": [
+        [
+          1,
+          1
+        ],
+        [
+          1,
+          2
+        ],
+        [
+          1,
+          3
+        ],
+        [
+          1,
+          4
+        ],
+        [
+          1,
+          5
+        ],
+        [
+          1,
+          6
+        ],
+        [
+          1,
+          7
+        ],
+        [
+          1,
+          8
+        ],
+        [
+          1,
+          9
+        ],
+        [
+          1,
+          10
+        ],
+        [
+          1,
+          11
+        ],
+        [
+          2,
+          1
+        ],
+        [
+          2,
+          2
+        ],
+        [
+          2,
+          3
+        ],
+        [
+          2,
+          4
+        ],
+        [
+          2,
+          5
+        ],
+        [
+          2,
+          6
+        ],
+        [
+          2,
+          7
+        ],
+        [
+          2,
+          8
+        ],
+        [
+          2,
+          9
+        ],
+        [
+          2,
+          10
+        ],
+        [
+          2,
+          11
+        ],
+        [
+          3,
+          1
+        ],
+        [
+          3,
+          2
+        ],
+        [
+          3,
+          3
+        ],
+        [
+          3,
+          4
+        ],
+        [
+          3,
+          5
+        ],
+        [
+          3,
+          6
+        ],
+        [
+          3,
+          7
+        ],
+        [
+          3,
+          8
+        ],
+        [
+          3,
+          9
+        ],
+        [
+          3,
+          10
+        ],
+        [
+          3,
+          11
+        ],
+        [
+          4,
+          1
+        ],
+        [
+          4,
+          2
+        ],
+        [
+          4,
+          3
+        ],
+        [
+          4,
+          4
+        ],
+        [
+          4,
+          5
+        ],
+        [
+          4,
+          6
+        ],
+        [
+          4,
+          7
+        ],
+        [
+          4,
+          8
+        ],
+        [
+          4,
+          9
+        ],
+        [
+          4,
+          10
+        ],
+        [
+          4,
+          11
+        ],
+        [
+          5,
+          1
+        ],
+        [
+          5,
+          2
+        ],
+        [
+          5,
+          3
+        ],
+        [
+          5,
+          4
+        ],
+        [
+          5,
+          5
+        ],
+        [
+          5,
+          6
+        ],
+        [
+          5,
+          7
+        ],
+        [
+          5,
+          8
+        ],
+        [
+          5,
+          9
+        ],
+        [
+          5,
+          10
+        ],
+        [
+          5,
+          11
+        ]
+      ],
+      "negative": [
+        {
+          "id": "preview_only",
+          "replace_once": [
+            "ORDER BY c.customer_id, i.item_id",
+            "ORDER BY c.customer_id, i.item_id LIMIT 50"
+          ]
+        },
+        {
+          "id": "duplicate_projection",
+          "replace_once": [
+            "i.item_id FROM",
+            "1 AS item_id FROM"
+          ]
+        }
+      ]
+    },
+    {
+      "id": "unsupported_reviews",
+      "question": "What is the average review rating? No reviews or ratings exist in this schema.",
+      "supported": false,
+      "expected": null,
+      "negative": [
+        {
+          "id": "surrogate_zero",
+          "sql": "SELECT 0 AS average_rating;"
+        }
+      ]
+    }
+  ]
+}

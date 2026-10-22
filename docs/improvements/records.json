@@ -1,0 +1,372 @@
+{
+  "schema_version": 1,
+  "project": "Database Agent",
+  "documented_date_IST": "2026-10-21",
+  "purpose": "Working deployable opinionated reference application; research-driven core capability, reliability, usability and reproducibility improvements. Not a competing commercial SaaS or a benchmark-score target.",
+  "publication_boundary": "Explicit public allowlist: published sources and authorized maintainer engineering summaries only. Original private case verdicts/discussions/artifacts are not exported.",
+  "records": [
+    {
+      "id": "DA-001",
+      "title": "Unsupported data must not become a false zero",
+      "date_IST": "2026-10-20",
+      "status": "released",
+      "research_source": "Published unsupported-data Result: https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-connected-data-cannot-answer-the-question. Separate maintainer reproduction/validation, not an exact historical rerun.",
+      "historical_benchmark_result": "Published Fail, unchanged; separate released engineering fix does not regrade the original run.",
+      "observed_failure": "An unsupported reviews question was answered with zero using unrelated audit records.",
+      "root_cause": "SQL could run on an available table even when that table did not represent the requested metric. Query success was mistaken for answer support.",
+      "engineering_decision": "Require an explicit schema-support decision. Keep genuine zero distinct from unavailable data; preserve table-access and execution-error guards.",
+      "implementation": "Added answerability propagation through SQL generation/execution, final answer and multi-source paths. Clear surrogate SQL/stale rows when unsupported.",
+      "validation": "Focused regressions cover unsupported input, real zero, positive results, denied tables and execution errors. Independent staged browser controls covered missing data, count 0 and count 2; a production missing-data check and a separate real-source positive SQL/rows/chart check passed.",
+      "limits": "A bounded product fix, not a full historical benchmark rerun. Metadata/schema-hint omissions remain separate. The original research verdict is not changed.",
+      "code_and_tests": [
+        "backend/agent/utils/answerability.py",
+        "tests/backend/test_answerability.py",
+        "tests/accuracy/fixtures/answerability.sql"
+      ],
+      "implementation_identifiers": [
+        "174b06e",
+        "97fdcf4"
+      ]
+    },
+    {
+      "id": "DA-002",
+      "title": "Render nested stacked-chart results without losing series",
+      "date_IST": "2026-10-20",
+      "status": "released",
+      "research_source": "Published charting context: https://aidemos.com/tools/futuresmart-ai-database-agent. The exact nested-renderer defect was a separate maintainer reproduction.",
+      "historical_benchmark_result": "Published Automatic Chart Generation: Partial, unchanged; exact nested-renderer scenario is not the published historical test",
+      "observed_failure": "A valid nested stacked-chart response could be unavailable in the UI despite valid SQL/rows and stored chart data.",
+      "root_cause": "The frontend result contract did not consistently normalize flat and nested segmented chart shapes.",
+      "engineering_decision": "Normalize the supplied result contract; keep individual values, zeros, missing series and Data/Query/Raw views. Do not replace SQL or tune a model to repair a renderer.",
+      "implementation": "Updated typed chart normalization and stacked-bar rendering for live and saved conversations.",
+      "validation": "Component contracts and independent staged/production browser checks passed. A synthetic four-order source produced visible North 100+150 and South 80+120 segments; SQL, all rows and full-reload saved reopen agreed.",
+      "limits": "This fixes rendering. It does not prove that a chart-only follow-up preserves the original business metric, or upgrade the published broad charting result.",
+      "code_and_tests": [
+        "frontend/src/components/conversations/__tests__/stackedContract.test.tsx",
+        "frontend/src/data/__tests__/nl2sqlChat.test.ts"
+      ],
+      "implementation_identifiers": [
+        "83c0727",
+        "837dbb1"
+      ]
+    },
+    {
+      "id": "DA-003",
+      "title": "Preserve metric meaning when changing scope",
+      "date_IST": "2026-10-20",
+      "status": "candidate_unaccepted",
+      "research_source": "Unpublished researcher feedback retained privately; published follow-up context is linked in baseline.md.",
+      "historical_benchmark_result": "Not publicly verifiable: case-level source is unpublished; no new benchmark verdict",
+      "observed_failure": "Maintainer replays found numerator/population and scope inconsistencies; a plausible percentage could represent a different question.",
+      "root_cause": "Metric definition, denominator population and follow-up scope were not consistently preserved. Exact historical deployed configuration is unknown.",
+      "engineering_decision": "Keep numerator/denominator and scope guards explicit. Compare to reference SQL on the same data state; never force historical numeric literals onto a changed database.",
+      "implementation": "A separate candidate adds metric/scope consistency checks; it remains outside the accepted main application.",
+      "validation": "Native pair/grouped controls passed after earlier wrong results were retained. Remaining semantic controls, independent candidate browser acceptance and production proof are incomplete.",
+      "limits": "No release or historical benchmark Pass. This candidate is separate from the delivery work.",
+      "code_and_tests": [],
+      "implementation_identifiers": [
+        "08d8388"
+      ]
+    },
+    {
+      "id": "DA-004",
+      "title": "Deliver and save the primary answer before optional work",
+      "date_IST": "2026-10-20",
+      "status": "candidate_unaccepted",
+      "research_source": "Maintainer-observed timeout/empty initial UI and measured request-path investigation; no published case-level research result established.",
+      "historical_benchmark_result": "Not publicly verifiable: case-level source is unpublished; no new benchmark verdict",
+      "observed_failure": "The old request waited for the whole graph/chart before its first useful answer. Later transport errors could erase an already received answer or identity.",
+      "root_cause": "Required answer delivery, optional work, persistence acknowledgement and frontend error state shared one fragile completion boundary.",
+      "engineering_decision": "Use one owned request lifecycle; publish an immutable validated primary after existing guards, acknowledge one insert, and scope optional updates by actual row and authorized ownership. Never retry an insert after unknown commit.",
+      "implementation": "A separate candidate implements primary-before-optional delivery, scoped persistence, retained frontend identity/answer, bounded cancellation and saved-answer-status replay. It does not change models or hosted edge timeouts.",
+      "validation": "On one independent real-provider synthetic sales turn, saved answer arrived 10.922 seconds, chart/EOF 14.500 seconds; complete two rows and saved reopen matched the source. Six native lifecycle contracts passed with declared upstream stubs/no provider calls. A native TCP-reset UI check retained the answer and obtained SQL/rows via one automatic saved read.",
+      "limits": "These timings are not a before/after speed comparison, p95 or SaaS accuracy result. With debug disabled, primary wire has no SQL/rows; they reconcile from storage. The reset proxy cannot exclude coalesced later frames, so exclusive-primary-only delivery is not claimed. Final saved-status correction has green CI but independent replay is incomplete. No production promotion.",
+      "code_and_tests": [],
+      "implementation_identifiers": [
+        "356b679",
+        "adc7098"
+      ]
+    },
+    {
+      "id": "DA-005",
+      "title": "Preserve a complete installable reference application",
+      "date_IST": "2026-10-20",
+      "status": "source_accepted",
+      "research_source": "Maintainer installation/repository review, not a benchmark accuracy case.",
+      "historical_benchmark_result": "Not publicly verifiable: case-level source is unpublished; no new benchmark verdict",
+      "observed_failure": "A working service repository was still cluttered and depended on deployment knowledge rather than a clear complete-product installation.",
+      "root_cause": "Product source, installation assets and internal operational material were mixed.",
+      "engineering_decision": "Keep backend, UI, supported deployment, sample and guides in one opinionated repository. Preserve existing behavior; keep private operational history out of distributable builds.",
+      "implementation": "Reorganized source and added a supported one-clone installation and deployment documentation.",
+      "validation": "Fresh-checkout build, UI/API sample checks and restart/persistence were independently checked. The then-known chart limitation was recorded and fixed separately in DA-002.",
+      "limits": "Installability is not general answer accuracy, public licensing, or proven load capacity.",
+      "code_and_tests": [
+        "README.md",
+        "docs/development.md",
+        "docs/architecture.md"
+      ],
+      "implementation_identifiers": [
+        "a33c37d"
+      ]
+    },
+    {
+      "id": "DA-006",
+      "title": "Evaluate speed together with correctness",
+      "date_IST": "2026-10-20",
+      "status": "evaluation_only",
+      "research_source": "Maintainer operation timings and separately controlled local evaluations; unpublished dataset/context details stay private.",
+      "historical_benchmark_result": "Not publicly verifiable: case-level source is unpublished; no new benchmark verdict",
+      "observed_failure": "Faster responses could contain wrong SQL, wrong populations or unsupported units, while some provider requests were rejected.",
+      "root_cause": "Two production observations spent 37.083 s of 43.037 s and 72.556 s of 83.958 s in SQL generation, with SQL execution of 0.029 s / 0.030 s. This does not isolate a universal provider cause.",
+      "engineering_decision": "Compare complete typed rows to pinned business definitions, use finite call budgets and retain every refusal/wrong result. Do not choose a model from speed alone or claim unverified remote experiment persistence.",
+      "implementation": "Separate evaluation code and sanitized local result records were prepared; no winning model was adopted.",
+      "validation": "Reviewed complete SQL/results and local evaluator feedback; no accepted quality winner. Remote experiment persistence remained unverified after rate limits; polling stopped.",
+      "limits": "No cost-saving, TTFT, p95, generic model-capability, or broad accuracy claim; failed screens remain failed.",
+      "code_and_tests": [],
+      "implementation_identifiers": [
+        "c2a7f24"
+      ]
+    },
+    {
+      "id": "DA-DEC-001",
+      "title": "Core capability quality takes precedence over commercial feature parity",
+      "date_IST": "2026-10-21",
+      "status": "deferred",
+      "research_source": "Project-purpose decision from the maintainer; recorded in the README.",
+      "historical_benchmark_result": "Not publicly verifiable: case-level source is unpublished; no new benchmark verdict",
+      "observed_failure": "Treating every capability row as a feature promise would replace a dependable reference application with an unbounded commercial roadmap.",
+      "root_cause": "Capability availability, correctness, usability and measurement are different evaluation dimensions.",
+      "engineering_decision": "Prioritize correct SQL/results, inspectability, reproducibility and usable deployment. Generalized multi-tenant controls, billing expansion and feature-for-feature SaaS competition are outside the current objective.",
+      "implementation": "Documentation decision only; no runtime capability removed or implied to exist.",
+      "validation": "Reviewed against the existing product boundary and this history. Missing capabilities retain their original private verdicts.",
+      "limits": "Deferred capabilities do not become benchmark Pass results or disappear from the private baseline.",
+      "code_and_tests": [],
+      "implementation_identifiers": []
+    },
+    {
+      "id": "DA-007",
+      "title": "Reject false-positive evaluation results with versioned reference contracts",
+      "date_IST": "2026-10-21",
+      "status": "evaluation_only",
+      "research_source": "Authorized maintainer synthetic checker investigation using the existing installation demo; no unpublished research or competitor material reproduced.",
+      "historical_benchmark_result": "Not a benchmark rerun; all original historical verdicts unchanged.",
+      "observed_failure": "The former manual smoke checker accepted swapped entity totals and tenfold-wrong API/narrative values while its independent SQL replay was correct.",
+      "root_cause": "Independent substring presence discarded entity/value association, numeric scale and complete-result shape.",
+      "engineering_decision": "Compare complete typed rows with explicit column association, multiplicity/order/numeric/NULL/unit policies; use a conservative bounded demo narrative checker. Preserve the small install demo and add a separate fixed relational regression fixture.",
+      "implementation": "Evaluation code only; no application models, prompts, defaults, delivery behavior or deployment changes. Four-table29-row versioned fixture has independently derived complete reference rows and successful deliberately wrong SQL controls.",
+      "validation": "Local14 focused tests passed. Exact revised source60dca9be68eba7834979014cd04d20e2d2bfe4da passed fullCI39563484302, including PostgreSQL16.6:8 actual SQL references plus1 authored unavailable-validator positive,20 successful wrong queries rejected, matching content fingerprint and verified schema rollback. Independent review recomputed8 goldens procedurally and passed14 tests plus28 independent checks (6 positive,22 adverse) after returning and verifying candidate corrections.",
+      "limits": "Evaluation-only; independently verified source; no application release/deployment. Fixture/comparator proof, not model accuracy, arbitrary SQL semantic equivalence, general prose judgment or API/UI acceptance. Unsupported prose is manual review, not automatically factual error. Public fixture is a seen regression asset, not an unseen benchmark. No provider calls or historical verdict upgrade.",
+      "code_and_tests": [
+        "tests/evaluation/run.py",
+        "tests/evaluation/reliability/oracle.py",
+        "tests/evaluation/reliability/fixture.py",
+        "tests/evaluation/reliability/fixtures/v1/RULES.md",
+        "tests/evaluation/reliability/fixtures/v1/manifest.json",
+        "tests/evaluation/test_reliability.py",
+        ".github/workflows/standalone-product.yml",
+        "docs/improvements/evidence/2026-10-21-evaluation-reliability.json"
+      ],
+      "implementation_identifiers": [
+        "d3400a3",
+        "60dca9b"
+      ]
+    },
+    {
+      "id": "DA-008",
+      "title": "Verify table access before reading source data",
+      "date_IST": "2026-10-21",
+      "status": "source_accepted",
+      "research_source": "https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/an-excluded-table-is-needed-to-answer-the-question",
+      "historical_benchmark_result": "Published Fail, unchanged",
+      "observed_failure": "Historical refusal still exposed an excluded-table read/SQL/zero. Existing current guard blocks direct/join queries but synthetic source witnesses show scoped CTE and unavailable-policy bypasses.",
+      "root_cause": "Global subtraction of every CTE name hid qualified/outer physical references. Missing/failed/malformed visibility could be treated as unrestricted. Schema preparation could sample stale selected tables before execution enforcement.",
+      "engineering_decision": "Keep the existing table guard, fail explicitly when its agent/database policy cannot be verified, resolve each CTE reference in scope and check permission before schema samples as well as generated SQL. No new RBAC system.",
+      "implementation": "Accepted source: strict nonempty boolean policy bound to actual agent/database; unknown tables require refresh. Denials clear SQL/rows and stop optional chart/final-answer work. Cross-database required-side policy failures remain explicit.",
+      "validation": "Synthetic pre-fix actual node-body reproduction preserved. Independent review found the first candidate converted a generation denial into a retryable empty-SQL error; corrected with actual generation-to-execution-to-routing controls for single/cross DB. Eleven focused methods pass locally; focused CI on first candidate passed, first full CI stopped on stale source-preservation hashes, separately corrected. Final independent acceptance/CI pending. Independent source/synthetic review on a95608d passed13 reviewer SQL controls and11 focused methods. Full container CI exposed a test-only /backend versus /app source-root error before policy execution; explicit checkout/image layout selection and its discriminator correct that. Twelve focused methods now pass locally. Final exact-head container CI remains pending. Container run39604920346 then passed36 backend tests; the separate legacy positive reused a mutated denied state, corrected by preserving fresh input for its next request. Actual legacy node-control body now passes with injected bootstrap; app source unchanged. Final exact-head CI39605744198 on562db709d15511cfdffb3cd3ac5c4fe664e10929 passed all jobs. Independent scoped source/synthetic acceptance recorded2026-10-21 at18:46IST; source integration authorized, deployment excluded.",
+      "limits": "No historical benchmark rerun, current deployment exploit, general SQL sandbox, source-grant change or production deployment claimed. Read-only source grants remain required. Policy is reloaded at read boundaries; atomic revocation during an in-flight database call is not established.",
+      "code_and_tests": [
+        "backend/agent/utils/table_access.py",
+        "backend/agent/nodes/sql_gen.py",
+        "backend/agent/nodes/sql_exec.py",
+        "tests/backend/test_access_policy.py"
+      ],
+      "validation_stages": {
+        "source_finding": "confirmed",
+        "synthetic_reproduction": "confirmed before fix",
+        "implementation": "source accepted for integration",
+        "independent_acceptance": "Scoped source/synthetic acceptance2026-10-21T18:46+05:30; exact562db70 full CI39605744198 SUCCESS",
+        "deployment": "not deployed"
+      },
+      "implementation_identifiers": [
+        "562db709d15511cfdffb3cd3ac5c4fe664e10929"
+      ],
+      "accepted_source_head": "562db709d15511cfdffb3cd3ac5c4fe664e10929",
+      "accepted_source_CI": "historical private CI run 39605744198; original link omitted"
+    },
+    {
+      "id": "DA-009",
+      "title": "Use one OpenAI credential for default query and chart operations",
+      "date_IST": "2026-10-21",
+      "status": "candidate_unaccepted",
+      "research_source": "Engineering observation; no new published benchmark run",
+      "historical_benchmark_result": "No verdict changed",
+      "observed_failure": "Default operations require several model providers, making installation and hosted operation depend on multiple provider credentials.",
+      "root_cause": "Multiple-provider defaults were confirmed. In the controlled OpenAI-only attempt, the configured credential was denied gpt-6-luna at the router (OpenAI PermissionDeniedError, model_not_found); SQL generation and charting were not reached. At that first-attempt checkpoint, the reason for unavailability was unestablished. A subsequent authenticated read of the bound project showed the selected IDs absent from its seven-entry allowlist; the independently verified additive correction is recorded below. The later chart attempt independently exposed a selection/policy mismatch: the direct-description selector included an excluded table, and the pre-sampling policy guard correctly denied it. This is separate from the earlier provider denial.",
+      "engineering_decision": "Use gpt-6.1-sol low for database/table selection, SQL generation/correction and transformation planning; gpt-6-luna none for routine operations. Preserve existing embedding models and vectors.",
+      "implementation": "Candidate OpenAI model defaults and SDK endpoint/reasoning compatibility, with a narrow identity-bound pre-sampling gate. Legacy-release integer0/1 flags are accepted only through an explicit compatibility lane; strict current access-policy semantics remain unchanged. Prompts, output schemas and embedding vectors are preserved.",
+      "validation": "Offline SDK transport/parse controls and independent emitted-node access controls passed. Required CI39614280096 on020d808 passed. First CI39613323118 exposed a new test-only checkout/image path error; original failure retained and corrected with the established resolver. Controlled runtime192 became healthy, then the first ordinary API query returned HTTP500 after4.5s. Actual request stack reached OpenAI router and was denied gpt-6-luna/model_not_found. The client JSONDecodeError was a secondary500 parsing symptom. The remaining chart query was withheld; no retry or alternative-model query occurred. Subsequent explicitly authorized administrative remediation used an existing Admin credential and independently bound the actual runtime project/key. Its allowlist kept all seven existing IDs and added only gpt-6-luna, gpt-6.1-sol and retained text-embedding-3-large. Admin readback and same-runtime-key catalog show all three; no inference or deployment ran during this administrative correction. After administrative remediation, the one remaining authorized chart submission ran on the unchanged immutable candidate. It returned HTTP500 plaintext after11.593s. Exact-request logs show description-based selection returned orders and order_status_history against a temporary orders-only policy; the pre-sampling guard rejected the excluded table with TableAccessPolicyError. No retry occurred; both authorized submissions are spent.",
+      "limits": "No successful query, chart, live UI, saved-result reopen, accuracy or benchmark Pass. For the first attempt, HTTP content type/response-header request ID were not retained and remain unknown. No billing/funding, organization-verification or global model-availability diagnosis is claimed. Previous deployment191 and exact original selected-agent context settings were restored; other144 stored overrides were unchanged. Source candidate remains unaccepted end to end. Administrative access correction does not change the original failed runtime result or establish current product success. For the separate second attempt, HTTP content type was retained as text/plain; charset=utf-8, while a response-header request ID was not retained. Original metadata was independently restored; final compute closeout is independently accepted: original191 stable and candidate193 STOPPED21:45:51.239IST. The list-index verifier could not observe a draining task; exact-known-task observations supplied final stop proof, without relabeling that limitation. No chart/SQL/model-quality success is established by this scope denial.",
+      "code_and_tests": [
+        "backend/model_config.json",
+        "backend/api/v1/utils/config_helper.py",
+        "backend/agent/utils/openai_chat_kwargs.py",
+        "tests/backend/test_openai_model_adapter.py",
+        "backend/agent/utils/sampling_policy.py"
+      ],
+      "validation_stages": {
+        "implementation": "candidate",
+        "independent_acceptance": "Scoped offline source/compatibility controls accepted; end-to-end attempt failed",
+        "deployment": "Controlled193 attempt rolled back to exact original191; ROOT verified original image/ownALB/PRIMARY and exact metadata restoration; candidate193 actually STOPPED21:45:51.239IST before deadline",
+        "hosted_smoke": "2of maximum2 submitted; first provider denial, second pre-sampling scope denial; no successful query/chart",
+        "UI_acceptance": "unmet; existing account had no selected-agent grant, no grant created",
+        "historical_benchmark": "unchanged",
+        "model_access_configuration": "Independently accepted administrative correction2026-10-21; seven prior entries preserved, three additions; catalog is not inference proof"
+      },
+      "implementation_identifiers": [
+        "020d80828c49723a47b94046a95b755c0a6e2b69"
+      ]
+    },
+    {
+      "id": "DA-010",
+      "title": "Keep table selection inside the verified access catalog",
+      "date_IST": "2026-10-21",
+      "status": "source_accepted",
+      "research_source": "Engineering observation from the controlled DA-009 attempt; no new published benchmark run",
+      "historical_benchmark_result": "No verdict changed",
+      "observed_failure": "Description-based selection chose an excluded table; the pre-sampling guard correctly refused it and the controlled request returned plaintext500.",
+      "root_cause": "The direct-description selector and its fallback paths did not consistently apply the configured table policy before choosing tables. The immutable legacy runtime lacked the canonical denial composition used by current source.",
+      "engineering_decision": "Verify the existing identity-bound policy before selection/few-shots; filter the catalog, reject excluded/unknown choices, constrain fallback to the verified catalog, and preserve canonical terminal denial through subsequent nodes.",
+      "implementation": "Canonical selector gates all branches and inherited denials. SQL generation preserves inherited terminal denial without changing its fresh pre-sampling check. Existing final-answer and REST response contract is reused; no new error framework, prompts or model configuration.",
+      "validation": "Ten new focused offline methods pass0.499s. Actual selector and canonical node/REST bodies are executed with synthetic auth/storage/provider boundaries and prohibited external sockets. Root review found an initial inherited-denial gap; corrected before acceptance with zero-work negative controls. First CI39634677643 passed the new selection-policy job but verify failed on the two stale source-preservation digests. The manifest now records those exact changed bytes, retaining immutable baselines and previous entries; original failure is preserved. Exacthead8d37fd01b5b887449936f229dbdbe80e12b08a34 requiredCI39634921512 passed all4jobs. Independent review2026-10-21 22:03IST accepted canonical offline source/contracts only, preserving the initial inherited-denial finding and first CI failure.",
+      "limits": "Canonical offline source accepted; not merged or deployed. No real-model SQL/chart/UI proof. No updated legacy release overlay/image is produced; canonical REST proof does not establish legacy runtime acceptance. Both controlled submissions remain failed and budget exhausted. Required CI is green on the stated exact head; it is not live or legacy-release acceptance.",
+      "code_and_tests": [
+        "backend/agent/nodes/select_table_and_fewshots.py",
+        "backend/agent/nodes/sql_gen.py",
+        "tests/backend/test_selection_policy.py",
+        ".github/workflows/standalone-product.yml",
+        "docs/source-preservation.json"
+      ],
+      "validation_stages": {
+        "implementation": "implemented, canonical source accepted offline",
+        "independent_acceptance": "2026-10-21 22:03IST, canonical selector/terminal/REST contracts only; no legacy release/runtime/UI/model accuracy acceptance",
+        "offline_contracts": "10methods PASS; permitted positive, deliberate policy/scope denials and actual canonical REST body",
+        "legacy_release": "no new overlay candidate; previous failed image unchanged",
+        "deployment": "none",
+        "hosted_smoke": "none; budget exhausted",
+        "historical_benchmark": "unchanged",
+        "required_CI": "39634921512 ALL4JOBS_SUCCESS on8d37fd01b5b887449936f229dbdbe80e12b08a34"
+      },
+      "implementation_identifiers": [
+        "3bc26d0830733d3be189cface63c169bc7c24431",
+        "8d37fd01b5b887449936f229dbdbe80e12b08a34"
+      ]
+    },
+    {
+      "id": "DA-011",
+      "title": "One versioned model profile for a one-key installation",
+      "date_IST": "2026-10-22",
+      "status": "source_accepted",
+      "research_source": "Maintainer first-run configuration inspection and operator-directed release qualification; no new benchmark run",
+      "historical_benchmark_result": "All original verdicts unchanged; existing documented 17-result baseline retained",
+      "observed_failure": "Competing configuration defaults and helper fallbacks could bypass operation settings. HC schema initialization could delete and recreate existing vectors.",
+      "root_cause": "Verified in source: duplicate loaders/API defaults, provider/model fallbacks, missing chart suggestion config and destructive legacy HC initialization.",
+      "engineering_decision": "Central versioned profile, one OpenAI key by default, existing provider/node customization, explicit endpoint/reasoning and configuration failures; preserve existing vector bindings without automatic rebuilding.",
+      "implementation": "Recommended Sol complex operations, Luna lightweight operations, small/1536 new embeddings. Existing stored node overrides remain; rich options use a file. Clean source export and bundled font notices prepared; Apache-2.0 and a separate fresh-history public repository approved on 22 October 2026 IST. ECS renderer injects only the OpenAI provider field by default; alternative provider references require an explicit restricted flag.",
+      "validation": "Offline candidate: 8 profile methods pass4.082s using real pinned SDK with synthetic HTTP transport and actual router/SQL/mapper schemas; 12 selector methods pass0.897s including invalid-config/vector controls; 5 existing adapter methods pass3.621s. First profile SDK fixture failed after removing Windows SystemRoot, then fixture corrected; no live transport. Further integration/portable export checks and fresh runtime acceptance pending. Additional controls:10 profile methods PASS17.287s including real Responses plain-text blocks/Chat string; selector12 PASS0.609s including actualAPI configuration400. Source packaging10 PASS3.647s; access12 PASS4.411s. V1 actual export816files passed packaging withoutGit and after localfreshGit import; profile10/plain text correction enters final candidate separately. Focused ECS helper6 methods PASS0.003s after updating an existing stale three-provider expectation (first run5passed/1error); no AWS mutation. Fresh corrected-source qualification a349b68: CI39736082550 all4jobs success; default one-key UI wizard, exact SQL/full typed two-row/chart result, full five-service restart/saved GET reopen and one direct API final-answer override accepted independently. See evidence/2026-10-22-one-key-qualification.json. This is a two-question synthetic smoke test, not a benchmark replay.",
+      "limits": "Public source publication approved; private implementation review history is not imported. No production deployment. All historical verdicts and failures remain unchanged. Limited four-row/two-question acceptance; saved top-level is_answered null and cosmetic zero-table header deferred. Exact provider HTTP attempt count unavailable; no alternative-provider live matrix or vector migration claim.",
+      "code_and_tests": [
+        "backend/model_profiles/futuresmart-recommended-v1.json",
+        "backend/agent/utils/model_profiles.py",
+        "tests/backend/test_model_profiles.py",
+        "tests/backend/test_selection_policy.py",
+        "docs/model-configuration.md",
+        "deploy/export_source.py"
+      ],
+      "validation_stages": {
+        "implementation": "source accepted and bounded fresh-install qualified",
+        "independent_acceptance": "accepted for the bounded synthetic fresh-install flow",
+        "fresh_install": "passed on corrected application source a349b68",
+        "UI_and_direct_API": "passed; two questions total",
+        "clean_export": "Exact tested export v6 verified; final documentation export verified separately",
+        "project_license": "Apache-2.0 approved 22 October 2026 IST",
+        "publication": "Public fresh-history source release approved; publication outcome recorded separately",
+        "deployment": "isolated temporary test only; production unchanged"
+      }
+    },
+    {
+      "id": "DA-012",
+      "title": "Write canonical table visibility for standard setup and edits",
+      "date_IST": "2026-10-22",
+      "status": "source_accepted",
+      "research_source": "Independent maintainer release qualification of standard table-setup API; no new benchmark run",
+      "historical_benchmark_result": "All published verdicts unchanged",
+      "observed_failure": "On preserved f7248/v4 source, the complete direct table-description setup API succeeded and persisted orders:int1; both strict canonical policy readers rejected that metadata. Other direct visibility edits and auto-job default paths also emitted integers. This was not a live wizard failure.",
+      "root_cause": "Metadata producers did not match the strict boolean query-policy contract. No source SQL or provider call was needed to demonstrate the gap.",
+      "engineering_decision": "Emit booleans from current producers; normalize exact legacy0/1 only when an explicit record write occurs. Preserve exclusions on description re-upload and reject malformed existing configuration. Do not relax runtime readers, enable legacy opt-in, migrate records, change grants or alter SQL guards.",
+      "implementation": "Canonical configuration display/write validator, existing persistence boundaries, table-description/visibility writers and description-job defaults. Existing false exclusions and metadata identity retained.",
+      "validation": "4 focused actual-body methods PASS0.460s: complete API setup and persistence into both strict readers, selector, pre-sampling denial and SQL executor allowed/denied boundaries; malformed and foreign controls; legacy read rejection then explicit-write normalization; auto-description preservation of false; falsey malformed GET/job failures before write/model. ORM, schema introspection, model and executor boundaries are synthetic; outbound sockets blocked. Initial job harness omitted asyncio/concurrency globals and was corrected; no app workaround. Fresh corrected-source qualification a349b68: CI39736082550 all4jobs success; default one-key UI wizard, exact SQL/full typed two-row/chart result, full five-service restart/saved GET reopen and one direct API final-answer override accepted independently. See evidence/2026-10-22-one-key-qualification.json. This is a two-question synthetic smoke test, not a benchmark replay.",
+      "limits": "Public source publication approved; private implementation review history is not imported. No production deployment. All historical verdicts and failures remain unchanged. Limited four-row/two-question acceptance; saved top-level is_answered null and cosmetic zero-table header deferred. Exact provider HTTP attempt count unavailable; no alternative-provider live matrix or vector migration claim.",
+      "code_and_tests": [
+        "backend/agent/utils/table_flag_writes.py",
+        "backend/knowledge/db_utils/table_description_db_utils.py",
+        "backend/api/v1/utils/tables_helper.py",
+        "backend/api/v1/utils/description_jobs_helper.py",
+        "tests/backend/test_fresh_policy_writes.py",
+        ".github/workflows/standalone-product.yml"
+      ],
+      "validation_stages": {
+        "implementation": "source accepted and bounded fresh-install qualified",
+        "independent_acceptance": "accepted for the bounded synthetic fresh-install flow",
+        "runtime": "passed for the bounded two-question fresh-install flow",
+        "historical_verdicts": "unchanged",
+        "fresh_install": "passed on corrected application source a349b68",
+        "UI_and_direct_API": "passed; two questions total",
+        "deployment": "isolated temporary test only; production unchanged",
+        "publication": "Public fresh-history source release approved; publication outcome recorded separately",
+        "project_license": "Apache-2.0 approved 22 October 2026 IST"
+      }
+    },
+    {
+      "id": "DA-013",
+      "title": "Default business templates inherit the central model profile",
+      "date_IST": "2026-10-22",
+      "status": "source_accepted",
+      "research_source": "Maintainer first-run UI qualification; no benchmark run",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "Normal fresh agent creation persisted a Google SQL-generation override in an OpenAI-only installation. Detected before an ordinary question was submitted.",
+      "root_cause": "Verified default create schema applies the business template, which bundled a hardcoded provider/model with its instructions.",
+      "engineering_decision": "Keep template instructions and inherit model configuration dynamically. Preserve explicit developer bindings; no schema migration, bulk rewrite or prompt change.",
+      "implementation": "Internal prompt-only template records use existing nullable provider/model/temperature fields. Runtime inherits only for complete null bindings with a nonempty text prompt; malformed partial bindings still fail. Configuration display resolves the current operation profile. Public model-edit schema still requires a complete binding.",
+      "validation": "3 actual-body methods PASS0.342s: default create schema through template application, actual persistence function, runtime reader and configuration display; rich file and single-provider changes; explicit stored binding preserved; partial, empty, whitespace and malformed prompt controls. Synthetic ORM boundary, external sockets blocked. First configuration-display fixture omitted scalar agent attributes and was corrected. No live query or model result. Independent reviewer matched all9 frozen candidate file hashes, protected9 source hashes/helper AST and17result baseline; actual prompt reader preserves the exact template instructions and datastore errors remain explicit. Fresh corrected-source qualification a349b68: CI39736082550 all4jobs success; default one-key UI wizard, exact SQL/full typed two-row/chart result, full five-service restart/saved GET reopen and one direct API final-answer override accepted independently. See evidence/2026-10-22-one-key-qualification.json. This is a two-question synthetic smoke test, not a benchmark replay.",
+      "limits": "Public source publication approved; private implementation review history is not imported. No production deployment. All historical verdicts and failures remain unchanged. Limited four-row/two-question acceptance; saved top-level is_answered null and cosmetic zero-table header deferred. Exact provider HTTP attempt count unavailable; no alternative-provider live matrix or vector migration claim.",
+      "code_and_tests": [
+        "backend/api/v1/utils/agent_templates.py",
+        "backend/agent/utils/agent_config_loader.py",
+        "backend/api/v1/utils/config_helper.py",
+        "tests/backend/test_template_model_inheritance.py"
+      ],
+      "validation_stages": {
+        "implementation": "source accepted and bounded fresh-install qualified",
+        "independent_acceptance": "accepted for the bounded synthetic fresh-install flow",
+        "fresh_UI_and_direct_API": "passed for the bounded two-question fresh-install flow",
+        "historical_verdicts": "unchanged",
+        "fresh_install": "passed on corrected application source a349b68",
+        "UI_and_direct_API": "passed; two questions total",
+        "deployment": "isolated temporary test only; production unchanged",
+        "publication": "Public fresh-history source release approved; publication outcome recorded separately",
+        "project_license": "Apache-2.0 approved 22 October 2026 IST"
+      }
+    }
+  ],
+  "current_published_results_index": "published-results.json"
+}

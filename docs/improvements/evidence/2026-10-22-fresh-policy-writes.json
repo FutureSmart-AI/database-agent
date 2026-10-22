@@ -1,0 +1,19 @@
+{
+  "id": "DA-012",
+  "status": "offline_candidate",
+  "methods": 4,
+  "unittest_seconds": 0.46,
+  "result": "PASS",
+  "external_model_source_calls": 0,
+  "boundaries": "Actual function bodies with synthetic ORM, schema/model/executor boundaries and blocked sockets",
+  "original_failure": "Supported direct setup API f7248/v4 persisted int1 rejected by both strict readers; not live wizard failure",
+  "first_CI": "39730036046 verify failed unchanged wizard assertion before build; cause UNKNOWN",
+  "source_sha256": {
+    "backend/agent/utils/table_flag_writes.py": "846eceba3d3e708048265b2a1432f49f414b969c57af9352f09080c32e1cc28a",
+    "backend/knowledge/db_utils/table_description_db_utils.py": "a5a2bc4a589d1c67e908328cf09f1adb638f47cfd6c257cd947790973a9234bf",
+    "backend/api/v1/utils/tables_helper.py": "bb4c92d06c1feba226e02adbbfff00e6f0ce8b70a13884e4800d8cae7be3ac8c",
+    "backend/api/v1/utils/description_jobs_helper.py": "2e1633f3ee6c07d086a857af5450f68e13e33286de52502b08132e3dd3262159",
+    "tests/backend/test_fresh_policy_writes.py": "fcddf6752bc14fd268d68c1795de7ce8596f4c7812606debde0667e28a4bb6c5"
+  },
+  "benchmark_verdicts": "unchanged"
+}
