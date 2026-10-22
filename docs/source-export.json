@@ -315,12 +315,12 @@
     "docs/improvements/evidence/2026-10-22-fresh-policy-writes.json": "8fa020fd8a8157fcb19b24f79c12893ea5cd20daad34cf9aa8431268a26ae177",
     "docs/improvements/evidence/2026-10-22-model-profile-offline.json": "85597e95af24bd29dc35f1054e57ef4d56d8b2e5ea6b4862fa4953b700fccf30",
     "docs/improvements/evidence/2026-10-22-one-key-qualification.json": "35f1a417e0736836b7d412fe4f257736de1874a2584ab64d83b82e25865db408",
-    "docs/improvements/history.md": "a33475cb4375d73613dc2b716f3ac4c9ab9f2db6fa54b34be40c507dd30aed21",
+    "docs/improvements/history.md": "f62c47b1241210efb80f4f069a072847b8c155372eee034a3ce5e41259f882a4",
     "docs/improvements/MAINTAINING.md": "06562772971dd8fdca511a15370b59eb9d7b4c5999d621d0904a79d8466945c8",
     "docs/improvements/published-observations.json": "0546f15602447774cc7b08e7e3c6a331aba996afd849abc1f146799203ffbe6a",
     "docs/improvements/published-results.json": "6951d846a5f8a968264e948f4a8001779f5a709a50aafa799049e60316cb807b",
     "docs/improvements/published-results.md": "71648bfb948cd190b4a46322ccc45c3e9da7bfe78e275f41434a0de0bfe4fae1",
-    "docs/improvements/README.md": "23c2e3f40e5e11a1ba9d1c9649020da2dd7cfedfe61729b7f8cb864f94c5b93a",
+    "docs/improvements/README.md": "4748c623602ad259667e7b11b095fb00e58ae25dae3c084cc5dfed0abc484764",
     "docs/improvements/records.json": "feadc6540f7632b6471bdcc2708bf4b487e8930542ca0cc26e1fb818f5425670",
     "docs/model-configuration.md": "0caab9561ad7c4fc8a7f340113cb23c2169e740271b0e9c299f8e5d954df5455",
     "docs/publication.md": "c354454f30da314d6837dc8a717eda323ec1182bdbde964654c8bd40f96a55b5",
@@ -789,7 +789,7 @@
     "frontend/vitest.setup.ts": "b9fc49f524436b712003dfaf8c89659a986f8a08acde4eb2b21922253d0067fb",
     "LICENSE": "cfc7749b96f63bd31c3c42b5c471bf756814053e847c10f3eb003417bc523d30",
     "NOTICE": "3c880ad6a14f915c63684d5cf8a085dccbfc1c0d3cabd65015be2382ab3012f8",
-    "README.md": "6cfea0e515e05fcb267521c61a328590869e31b883536cda0832805dfa3153ef",
+    "README.md": "ce80e546f99cbb92bbb228905b4e80860ba5b708d16a6425675e1bf49b23a620",
     "tests/accuracy/fixtures/answerability.sql": "124ef5ae989bea644445dd9f2115a5a9f15bfb58395d80cc2d0a41e64e59fa13",
     "tests/accuracy/fixtures/reviews-positive.sql": "759dda31bcdc4ec460df6ebba2e06bcbd047b164327600841c70f6f98dc60d2e",
     "tests/accuracy/fixtures/reviews-zero.sql": "2a7736327df80803b096d5eb5de92fe5379c9b0d76c77acbbee261201076e6e1",
@@ -831,6 +831,7 @@
     "tests/evaluation/reliability/oracle.py": "15d595fa32dbd8fc5d5e8ece159d448a57e15ce81c13e22bf95901a491eef762",
     "tests/evaluation/run.py": "2f02324a55690b4d3f5f3cfa438ce672a4957a3ba2f1c06492af0fb15fedd9ef",
     "tests/evaluation/test_reliability.py": "8857966248f09a0c2b549b0e1f6ddcf4e8340719ea43c249c9bc09f5efcc39b7",
-    "tests/run.py": "022a8d19cdbbc1fba2ecc9a948394eb66cab2d95450f9032921d569fb8db7e0e"
+    "tests/run.py": "022a8d19cdbbc1fba2ecc9a948394eb66cab2d95450f9032921d569fb8db7e0e",
+    "docs/improvements/S64-unsupported-data.md": "f2d415768fbe38542adbed6cfc78c932fc4ec548aac56536484aaf958dc8e010"
   }
 }

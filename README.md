@@ -4,6 +4,10 @@
 
 This is a working Database Agent that lets you connect a SQL database, ask questions in natural language, inspect generated SQL, explore results, and create visualizations.
 
+**Research → product change: [S64 — unsupported data was reported as zero](docs/improvements/S64-unsupported-data.md).**
+[Original published finding](https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-connected-data-cannot-answer-the-question): **Fail, unchanged** · Engineering correction: **released** · Independently accepted benchmark retest: **pending**.
+This retrospective connects the finding to the code, regression controls and recorded validation; the correction predates this repository's public history.
+
 But the purpose of this project goes beyond providing another text-to-SQL application.
 
 ## Why we're building this publicly
