@@ -4,45 +4,36 @@
 
 This is a working Database Agent that lets you connect a SQL database, ask questions in natural language, inspect generated SQL, explore results, and create visualizations.
 
-**Research → product change: [S64 — unsupported data was reported as zero](docs/improvements/S64-unsupported-data.md).**
-[Original published finding](https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-connected-data-cannot-answer-the-question): **Fail, unchanged** · Engineering correction: **released** · Independently accepted benchmark retest: **pending**.
-This retrospective connects the finding to the code, regression controls and recorded validation; the correction predates this repository's public history.
+## How AI Demos research improves Database Agent
 
-But the purpose of this project goes beyond providing another text-to-SQL application.
+We use findings from [AI Demos](https://aidemos.com/) to investigate product
+failures and improve this working, open-source reference application. Our
+[improvement history](docs/improvements/README.md) connects published findings,
+engineering decisions, code and verification, while preserving the failures.
 
-## Why we're building this publicly
+### Example: an answer using the wrong data
 
-At [AI Demos](https://aidemos.com/), a research and benchmarking platform developed by FutureSmart AI, we evaluate AI products against real-world scenarios, capture evidence, and publish what works and what fails.
+**The research finding — S64.** A user asked how many five-star reviews had been
+received. The connected database had no review data, but the agent queried an
+unrelated activity log and returned zero. The [published benchmark result was
+Fail](https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-connected-data-cannot-answer-the-question).
 
-We wanted to demonstrate what happens when a product team actually uses those research findings to improve its own product.
+**What we improved.** We added an explicit answerability decision: does the
+available schema support the requested information? Unsupported questions should
+produce an unavailable answer, while a valid query that genuinely returns zero
+remains answerable. [Read the investigation, code and regression controls](docs/improvements/S64-unsupported-data.md).
 
-So we're using FutureSmart Database Agent as a **public, ongoing case study**.
+**What we verified.** Existing engineering regressions use mocked model/database
+boundaries. Separate historical browser checks covered missing information,
+genuine zero results and valid positive counts. These are engineering checks,
+not a new independently graded benchmark run.
 
-We take findings from AI Demos research, investigate reported failures, make engineering decisions, implement fixes, and document what actually changed.
+**Engineering correction released · Original benchmark Fail preserved · Independent benchmark retest pending.**
 
-You can follow that process here—from the original benchmark result to the implementation and subsequent verification.
+[Explore all research-driven findings and engineering outcomes →](docs/improvements/README.md)
 
-**We're not trying to build another commercial Database Agent SaaS or achieve the highest benchmark score.** The objective is to maintain a complete, deployable, open-source reference implementation and demonstrate how systematic research can guide product development.
-
-## From benchmark findings to product improvements
-
-Our improvement history connects:
-
-**Published benchmark result → Identified issue → Engineering investigation → Implementation → Verification**
-
-And we publish the failures too.
-
-For example:
-
-- **Unsupported questions:** AI Demos identified a case where the agent returned zero using unrelated database information. We introduced explicit answerability checks and verified the behavior against missing, zero, and positive data cases.
-- **Changing the question mid-conversation:** Research found cases where the agent changed the meaning of a metric during follow-ups. This remains an ongoing engineering investigation.
-- **Excluded database tables:** A published test found that the agent accessed an excluded table despite refusing the request. We reproduced gaps with synthetic data, implemented fail-closed enforcement, and independently verified the source fix. It has not been deployed, and the original benchmark Fail is unchanged.
-
-These are examples of actual findings, not claims that every issue has been resolved.
-
-[Explore the published AI Demos benchmark results](https://aidemos.com/benchmarks/ai-database-agents/tools/futuresmart-ai-database-agent)
-
-[Explore our engineering decisions and improvement history](docs/improvements/README.md)
+We prioritize a dependable, deployable product and reproducible evidence over
+commercial feature parity or a higher benchmark score.
 
 ## A complete reference application, not just a library
 
