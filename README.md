@@ -141,16 +141,23 @@ requires HTTPS, matching login origin, secure cookies, and private datastores.
 
 Use read-only source credentials: the existing execution path is not a general
 SQL sandbox. Review generated queries and results. Query-time descriptions do
-not automatically include PostgreSQL table comments.
+not automatically include PostgreSQL table comments. PostgreSQL connections
+accept any TCP port; MySQL connections are accepted on port 3306 only.
 
 Flat and nested stacked-bar responses render through the same live and saved
 conversation path. Stacked charts preserve individual series values, explicit
 zeros and missing series. Invalid segmented data shows an explanation while
 the supplied Data, Query and Raw views remain available.
 
-Standalone login is for one operator. Broader hosted provider-key isolation,
-shared website widget assets, and the retired external report-consumer lane
-remain separate work. The in-process report option is included. Targeted
+Standalone login is for one operator. On the hosted service (2026-10-22), each
+account uses either its own provider keys or the platform key, set per account.
+An account on its own keys uses them for setup, questions, charts and
+embeddings, and gets a clear error, with no fallback to the platform key, when
+its key is missing. That was verified on one bounded hosted journey: one
+answered and one refused question, using a temporary key. It is not a load or
+multi-tenant security assessment. Shared website widget assets and the retired
+external report-consumer lane remain separate work. The in-process report
+option is included. Targeted
 installation checks do not establish general benchmark accuracy or load capacity.
 
 ## License and provenance
