@@ -4,6 +4,8 @@
 
 This is a working Database Agent that lets you connect a SQL database, ask questions in natural language, inspect generated SQL, explore results, and create visualizations.
 
+**[Try the live application →](https://futuresmart.ai/solutions/database-agent)** · [Run it locally](#install) · [Research & improvements](docs/improvements/README.md)
+
 ## How AI Demos research improves Database Agent
 
 We use findings from [AI Demos](https://aidemos.com/) to investigate product
