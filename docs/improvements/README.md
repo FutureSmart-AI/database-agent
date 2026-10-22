@@ -4,6 +4,7 @@ Recorded on 21 October 2026 (IST). This is a public-facing history of our own
 reference application. It preserves failures, decisions and limited validation
 alongside successful fixes. It is not a leaderboard or a current accuracy score.
 
+- [S64 retrospective: unsupported data was reported as zero](S64-unsupported-data.md) — original Fail unchanged; correction released; independent benchmark retest pending.
 - [Original evaluation baseline and published sources](baseline.md)
 - [Dated 17-result documented baseline and unchanged verdicts](published-results.md)
 - [Engineering history, including unfinished and declined work](history.md)

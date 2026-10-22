@@ -19,6 +19,8 @@ Documented 2026-10-21 (IST); earlier dates are dates supported by the saved work
 
 Recorded date: **2026-10-20 IST**. State: **released**.
 
+[Read the complete S64 retrospective](S64-unsupported-data.md): finding → code/tests → recorded validation. Original **Fail unchanged**; independently accepted benchmark retest **pending**.
+
 **Research source.** The [unsupported-data Result](https://aidemos.com/benchmarks/ai-database-agents/results/futuresmart-ai-database-agent/the-connected-data-cannot-answer-the-question) is now published. Our later reproduction and validation remain separate from that historical run.
 
 **Original benchmark result.** Published **Fail**, unchanged. The released fix below does not regrade that run.
