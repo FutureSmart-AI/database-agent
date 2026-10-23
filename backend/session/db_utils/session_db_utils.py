@@ -59,6 +59,14 @@ async def get_past_conversation(session_id):
 		logger.error(f"Error getting past conversation: {e}")
 		raise
 
+async def get_session_agent_ids(session_id: str) -> set:
+	"""The agents a session created by this API belongs to; empty when it never created one."""
+	async with get_async_session() as session:
+		res = await session.execute(
+			select(ChatSessions.chatbot_id, ChatSessions.agent_id).where(ChatSessions.session_id == session_id)
+		)
+		return {agent for row in res.all() for agent in row if agent}
+
 async def get_session_details(session_id: str, agent_id: str):
 	"""
 	Return dict with session_id, created_time, session_title or None.
@@ -382,13 +390,24 @@ def _chart_for_replay(row) -> Optional[dict]:
 	return None
 
 
-async def get_session_data(session_id: str):
+async def get_session_data(session_id: str, *, agent_id: str, show_sql_query: bool, show_db_result: bool):
+	"""A saved conversation — this agent's turns — under the agent's answer visibility settings.
+
+	All three are required (no default) so every caller decides. Only `agent_id`'s turns are
+	served: a session id can carry another agent's turns too (a chat service may send its own
+	thread id to every agent it calls). Live chat leaves the SQL out when `show_sql_query` is
+	off and the rows out when `show_db_result` is off, and a replay must not hand back what the
+	live answer withheld. Pass the flags from `get_agent_with_visibility`, the same resolution
+	live chat uses.
+	"""
 	try:
 		logger.info(f"Getting session data for session_id: {session_id}")
 		session_data = []
 		async with get_async_session() as session:
 			res = await session.execute(
-				select(ChatLogs).where(ChatLogs.session_id == session_id).order_by(ChatLogs.created_at)
+				select(ChatLogs).where(
+					ChatLogs.session_id == session_id, ChatLogs.agent_id == agent_id,
+				).order_by(ChatLogs.created_at)
 			)
 			rows = res.all()
 			logger.info(f"Found {len(rows) if rows else 0} messages for session {session_id}")
@@ -417,12 +436,16 @@ async def get_session_data(session_id: str):
 					}
 					# Build debug info (no dedicated debug_info column in DB)
 					if any([row_obj.user_query, row_obj.refined_query, row_obj.sql_query, row_obj.db_output]):
-						assistant_message["debug_info"] = {
+						debug_info = {
 							"query": row_obj.user_query,
 							"refine_query": row_obj.refined_query,
-							"sql_query": row_obj.sql_query,
-							"db_output": row_obj.db_output
 						}
+						# Same omission as the live answer: the key is left out, not nulled.
+						if show_sql_query:
+							debug_info["sql_query"] = row_obj.sql_query
+						if show_db_result:
+							debug_info["db_output"] = row_obj.db_output
+						assistant_message["debug_info"] = debug_info
 					else:
 						assistant_message["debug_info"] = None
 					# The ONLY change to this payload: the chart is sent instead of a
@@ -430,10 +453,11 @@ async def get_session_data(session_id: str):
 					assistant_message["graph_output"] = _chart_for_replay(row_obj)
 					# Additive: the column-labelled result block stored for this turn
 					# ({columns, rows, row_count, truncated}); `db_output` above keeps bare rows
-					# without column names. None for turns stored before the block existed.
+					# without column names. None for turns stored before the block existed, and
+					# when the agent hides result rows.
 					stored_debug = getattr(row_obj, "debug_info", None)
 					assistant_message["result"] = (
-						stored_debug.get("db_result") if isinstance(stored_debug, dict) else None
+						stored_debug.get("db_result") if show_db_result and isinstance(stored_debug, dict) else None
 					)
 					session_data.append(assistant_message)
 		logger.info(f"Returning {len(session_data)} total messages for session {session_id}")
@@ -453,10 +477,13 @@ async def get_session_chat_counter_from_db(session_id: str):
 		logger.error(f"Error getting session chat counter: {e}")
 		return None
 				
-async def add_user_feedback(session_id: str, chat_id: str, feedback: str, corrected_sql: str = None):
+async def add_user_feedback(session_id: str, chat_id: str, feedback: str, corrected_sql: str = None, *, agent_id: str):
+	"""Record feedback on one of `agent_id`'s turns. A turn of another agent is not found, so a
+	caller allowed to use one agent cannot rewrite another agent's stored verdict or SQL."""
 	try:
 		async with get_async_session() as session:
-			res = await session.execute(select(ChatLogs).where(ChatLogs.session_id == session_id, ChatLogs.chat_id == chat_id))
+			res = await session.execute(select(ChatLogs).where(
+				ChatLogs.session_id == session_id, ChatLogs.chat_id == chat_id, ChatLogs.agent_id == agent_id))
 			row = res.first()
 			if not row:
 				return

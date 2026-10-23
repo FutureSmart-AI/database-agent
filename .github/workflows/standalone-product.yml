@@ -54,6 +54,32 @@ jobs:
         run: python -m pip install --disable-pip-version-check fastapi==0.150.0 pydantic==2.14.1
       - name: Verify session continuation stays on its own agent
         run: python -m unittest discover -s tests/backend -p test_session_scope.py -v
+  session-storage:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    services:
+      postgres:
+        image: postgres:16.6-alpine
+        env:
+          POSTGRES_USER: session_storage_admin
+          POSTGRES_PASSWORD: synthetic-ci-only
+          POSTGRES_DB: session_storage
+        ports:
+          - 127.0.0.1:15441:5432
+        options: >-
+          --health-cmd "pg_isready -U session_storage_admin -d session_storage"
+          --health-interval 2s --health-timeout 2s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+      - name: Install only the pinned API-test, model and PostgreSQL driver dependencies
+        run: python -m pip install --disable-pip-version-check fastapi==0.150.0 pydantic==2.14.1 sqlalchemy==2.0.36 sqlmodel==0.0.22 asyncpg==0.32.0
+      - name: Session isolation on the product's queries against real PostgreSQL
+        env:
+          SESSION_STORAGE_TEST_URL: postgresql+asyncpg://session_storage_admin:synthetic-ci-only@127.0.0.1:15441/session_storage
+        run: python -m unittest discover -s tests/backend -p test_session_storage.py -v
   evaluation-reliability:
     runs-on: ubuntu-latest
     timeout-minutes: 5

@@ -17,14 +17,21 @@ from chatbot_management.services.sqlmodel_session import get_async_session
 from sqlmodel import select
 
 
-async def get_past_conversation_safe(session_id):
-    """Get past conversation for a session"""
+async def get_past_conversation_safe(session_id, agent_id):
+    """Get past conversation for a session — this agent's turns only.
+
+    A session id can be shared by more than one agent (a chat service may send its own thread
+    id to every agent it calls). Reading by session id alone replayed one agent's questions and
+    answers into another agent's model context.
+    """
     try:
         start_time = time.time()
         messages = []
         async for session in get_async_session():
             res = await session.execute(
-                select(ChatLogs).where(ChatLogs.session_id == session_id).order_by(ChatLogs.created_at)
+                select(ChatLogs).where(
+                    ChatLogs.session_id == session_id, ChatLogs.agent_id == agent_id,
+                ).order_by(ChatLogs.created_at)
             )
             rows = res.scalars().all()
             for chat_log in rows:
@@ -45,7 +52,7 @@ async def get_past_messages_safe(session_id, user_id, agent_id, user_query):
             session_info = await agent_log_new_session(user_id, agent_id, user_query)
             return {"past_messages": [], "session_id": session_info['session_id']}
         else:
-            past_messages = await get_past_conversation_safe(session_id)
+            past_messages = await get_past_conversation_safe(session_id, agent_id)
             return {"past_messages": past_messages, "session_id": session_id}
     except Exception as e:
         logger.error(f"Error in get_past_messages_safe: {str(e)}")
@@ -53,16 +60,19 @@ async def get_past_messages_safe(session_id, user_id, agent_id, user_query):
 
 
 async def ensure_session_belongs_to_agent(session_id: Optional[str], agent_id: str) -> None:
-    """Refuse to continue a session that was not created on this agent.
+    """Refuse a session_id that this API created for a different agent.
 
-    History is read by session_id alone (get_past_conversation_safe), so an unchecked id would
-    replay another agent's questions and answers into this agent's model context and append the
-    new turn to that foreign session. A new conversation (no id) is always allowed.
+    Runs before any history read or model call, so continuing another agent's conversation is
+    refused outright rather than only stripped of its history (which
+    `get_past_conversation_safe` does in any case). A session id this API never created (a chat
+    service's own thread id) continues with this agent's turns only. A new conversation (no id)
+    is always allowed.
     """
     if not session_id or session_id in ["", "string"]:
         return
-    from session.db_utils.session_db_utils import get_session_details
-    if not await get_session_details(session_id, agent_id):
+    from session.db_utils.session_db_utils import get_session_agent_ids
+    owners = await get_session_agent_ids(session_id)
+    if owners and agent_id not in owners:
         raise HTTPException(status_code=404, detail=f"Session {session_id} not found for agent {agent_id}")
 
 
@@ -328,14 +338,16 @@ async def get_agent_runtime_db(agent_id: str) -> Tuple[dict, float]:
     return db_response.get("db_details"), elapsed
 
 
-async def get_chat_log_for_export(session_id: str, chat_id: Optional[str]):
-    """Fetch the ChatLogs row for a CSV export request."""
+async def get_chat_log_for_export(session_id: str, chat_id: Optional[str], agent_id: Optional[str] = None):
+    """Fetch the ChatLogs row for a CSV export request; only `agent_id`'s turns when given."""
+    scope = [ChatLogs.agent_id == agent_id] if agent_id else []
     async for db_session in get_async_session():
         if chat_id:
             res = await db_session.execute(
                 select(ChatLogs).where(
                     ChatLogs.chat_id == chat_id,
                     ChatLogs.session_id == session_id,
+                    *scope,
                 ).limit(1)
             )
         else:
@@ -343,26 +355,23 @@ async def get_chat_log_for_export(session_id: str, chat_id: Optional[str]):
                 select(ChatLogs).where(
                     ChatLogs.session_id == session_id,
                     ChatLogs.sql_query.isnot(None),
+                    *scope,
                 ).order_by(ChatLogs.created_at.desc()).limit(1)
             )
         return res.scalar_one_or_none()
 
 
 async def get_session_messages_data(session_id: str, agent_id: str) -> dict:
-    """Verify agent exists then return session conversation data."""
-    async for session in get_async_session():
-        result = await session.execute(
-            select(ChatbotDetails).where(ChatbotDetails.agent_id == agent_id)
-        )
-        agent = result.scalar_one_or_none()
-        if not agent:
-            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    """Verify agent exists then return session conversation data, under the agent's answer
+    visibility settings (the same ones live chat applies)."""
+    _, show_sql_query, show_db_result, _ = await get_agent_with_visibility(agent_id)
 
     from session.db_utils.session_db_utils import get_session_data, get_session_details
     session_detail = await get_session_details(session_id, agent_id)
     if not session_detail:
         return {"message": "No session data found"}
-    session_data = await get_session_data(session_id)
+    session_data = await get_session_data(
+        session_id, agent_id=agent_id, show_sql_query=show_sql_query, show_db_result=show_db_result)
     if session_data:
         return {
             "session_id": session_detail['session_id'],

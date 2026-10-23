@@ -28,6 +28,7 @@ from api.v1.schemas.sessions import (
     UpdateSessionRequest,
 )
 from agent.utils.authorization import require_agent_permission
+from api.v1.utils.chat_helper import get_agent_with_visibility
 
 router = APIRouter(prefix="/v1")
 
@@ -144,8 +145,10 @@ async def get_session(
                 detail=f"Session {session_id} not found for agent {agent_id}"
             )
         
-        # Get conversation data
-        conversation_data = await get_session_data(session_id)
+        # Get conversation data, under the agent's answer visibility settings
+        _, show_sql_query, show_db_result, _ = await get_agent_with_visibility(agent_id)
+        conversation_data = await get_session_data(
+            session_id, agent_id=agent_id, show_sql_query=show_sql_query, show_db_result=show_db_result)
         
         return {
             "session_id": session_details['session_id'],

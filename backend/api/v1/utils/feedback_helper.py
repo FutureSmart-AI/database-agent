@@ -49,7 +49,8 @@ async def process_feedback(agent_id: str, body) -> dict:
         session_id=body.session_id,
         chat_id=body.chat_id,
         feedback=normalized_label,
-        corrected_sql=sql_to_store
+        corrected_sql=sql_to_store,
+        agent_id=agent_id,
     )
 
     if normalized_label == "rejected" and body.corrected_query:

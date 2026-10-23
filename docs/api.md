@@ -24,6 +24,19 @@ uses the signed HTTP-only session cookie; no hosted Auth service is required.
 | `GET /v1/agents/{id}/sessions` | Saved conversations on the agent |
 | `GET /v1/agents/{id}/sessions/{session_id}` | A saved conversation, each answer with its SQL, `result` rows and chart |
 
+An agent only ever sees its own turns of a conversation: chat history and replays
+are read for that agent alone. A `session_id` this API created for another agent
+returns HTTP404 before any history is read or a model is called; a `session_id`
+the API did not create (for example a chat service's own thread id) continues
+with this agent's turns only.
+
+`show_sql_query` and `show_db_result` apply to saved conversations exactly as to
+live answers: a replay leaves out the SQL and the rows (`debug_info.db_output`
+and `result`) the agent hides, and `GET /v1/sessions/{session_id}/export` returns
+HTTP403 for an agent that hides result rows; with an agent key it finds only that
+agent's turns. Both settings are read when the
+conversation is served, so turning one back on shows the stored SQL or rows again.
+
 Use the generated OpenAPI contract for complete request/response fields and
 streaming options. `tests/evaluation/run.py` is a small working client example:
 it loads configuration privately, creates the sample agent/source/table, issues
