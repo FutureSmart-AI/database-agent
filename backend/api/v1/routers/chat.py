@@ -26,7 +26,7 @@ from agent.db_utils.session_db_utils import (
 )
 from agent.runner import run_agent_flow
 from api.v1.utils.chat_helper import (
-    get_past_messages_safe, get_owner_email_by_agent_id,
+    get_past_messages_safe, get_owner_email_by_agent_id, ensure_session_belongs_to_agent,
     get_agent_with_visibility, get_agent_runtime_db,
     get_chat_log_for_export, get_session_messages_data,
     build_chat_response, maybe_upload_csv_export, persist_chat_logs,
@@ -217,6 +217,7 @@ async def chat_with_agent(
 
         chat_id = str(uuid.uuid4())
         session_id = body.session_id
+        await ensure_session_belongs_to_agent(session_id, agent_id)
 
         message_history = await get_past_messages_safe(session_id, user_id, agent_id, body.query)
         past_messages = message_history["past_messages"]

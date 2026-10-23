@@ -428,6 +428,13 @@ async def get_session_data(session_id: str):
 					# The ONLY change to this payload: the chart is sent instead of a
 					# hardcoded None. Every other key, debug_info included, is untouched.
 					assistant_message["graph_output"] = _chart_for_replay(row_obj)
+					# Additive: the column-labelled result block stored for this turn
+					# ({columns, rows, row_count, truncated}); `db_output` above keeps bare rows
+					# without column names. None for turns stored before the block existed.
+					stored_debug = getattr(row_obj, "debug_info", None)
+					assistant_message["result"] = (
+						stored_debug.get("db_result") if isinstance(stored_debug, dict) else None
+					)
 					session_data.append(assistant_message)
 		logger.info(f"Returning {len(session_data)} total messages for session {session_id}")
 		return session_data

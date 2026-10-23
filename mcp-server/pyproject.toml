@@ -1,0 +1,22 @@
+[build-system]
+requires = ["setuptools>=69"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "database-agent-mcp"
+version = "0.1.0"
+description = "MCP server for FutureSmart Database Agent, built on its existing REST API"
+readme = "README.md"
+license = "Apache-2.0"
+requires-python = ">=3.10"
+dependencies = [
+    "mcp>=1.12,<2",
+    "httpx>=0.27,<1",
+    "pydantic>=2.7,<3",
+]
+
+[project.scripts]
+database-agent-mcp = "database_agent_mcp.server:main"
+
+[tool.setuptools]
+packages = ["database_agent_mcp"]
