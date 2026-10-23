@@ -127,10 +127,11 @@ and `chart_output`. Send a follow-up to
 - The agent's source credentials should be a dedicated read-only database
   account. The adapter cannot widen what that account or the agent's table
   visibility allows; it only forwards questions.
-- A conversation can be continued only on the agent that created it: a
-  `session_id` from another agent returns HTTP 404 before any history is read
-  or any model is called. Deployments running an API version older than this
-  change do not perform that check.
+- An agent only ever sees its own turns of a conversation: history and replays
+  are read for that agent alone, and a `session_id` created on another agent
+  returns HTTP 404 before any history is read or any model is called.
+  Deployments running an API version older than this change do not perform
+  that check.
 - Saved conversations follow the agent's `show_sql_query` and `show_db_result`
   in the API itself, exactly as live answers do: a replay leaves out the SQL and
   rows the agent hides, and CSV export returns HTTP 403 when rows are hidden.

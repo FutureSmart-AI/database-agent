@@ -1100,9 +1100,9 @@
     },
     "backend/api/v1/routers/chat.py": {
       "baseline_sha256": "2649938a3a23278b9a3ad952853436987b27e2918787af6b813b272059a47d78",
-      "current_sha256": "33a934b2c435167b37273b70c5cd798dce33108aa00af2887a430d355d57553a",
+      "current_sha256": "c505fdf62dd8af040a340cb513642016656026606469ac50b067c88642582dd2",
       "issue": "DA-011 / DA-MCP-001, DA-MCP-002",
-      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending. DA-MCP-001: session-agent scope check before history/model. DA-MCP-002: Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending. DA-MCP-001: session-agent scope check before history/model. DA-MCP-002: Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     },
     "backend/api/v1/utils/tables_helper.py": {
       "baseline_sha256": "7d02daefc0bd22fe516fdfbfd26d034c3b55c05655fcb1fd4bd9a42029d1d09b",
@@ -1124,21 +1124,21 @@
     },
     "backend/api/v1/utils/chat_helper.py": {
       "baseline_sha256": "a19c1b056d58c9cf570b77eb5d6ff7e6e845a01648056636ba2b8f6f20d66385",
-      "current_sha256": "644a6116d0751a22eb192c79fc8daf7fb03184fe4088cd456652fcdc47ef6c5c",
+      "current_sha256": "ea1c447f054c6b3ff25d5f47835ad3a3373be821bee84c75b87825cc95a6f4dd",
       "issue": "DA-MCP-001, DA-MCP-002",
-      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     },
     "backend/session/db_utils/session_db_utils.py": {
       "baseline_sha256": "18e03d5966a451f0b1bc6d5777e2254effc1c1ad248f033d0067c7d7faf64d11",
-      "current_sha256": "d6caed78e543be6de6fde5a7c8a2a7e148196e1cba02ba2910cc5c297b1272c0",
+      "current_sha256": "48066d9119e8137e3039111c4b7d3bc49d7e2c298b7c3ad51fa2c829fc029bb3",
       "issue": "DA-MCP-001, DA-MCP-002",
-      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     },
     "backend/api/v1/routers/sessions.py": {
       "baseline_sha256": "77f78284e95e36bec167d39cbe89ed8f8969ce958425882905360f1650f7e638",
-      "current_sha256": "f92584a9225493f809a266cf4d3c388d4afd87a2a794047a9596a8bae2bf6479",
+      "current_sha256": "dc345228a30bd8d3fd539c7e2b90c1e7c7b0688306c46f446b6a9346bec638cf",
       "issue": "DA-MCP-002",
-      "reason": "Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "reason": "Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     }
   }
 }

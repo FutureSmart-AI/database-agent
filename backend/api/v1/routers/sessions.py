@@ -148,7 +148,7 @@ async def get_session(
         # Get conversation data, under the agent's answer visibility settings
         _, show_sql_query, show_db_result, _ = await get_agent_with_visibility(agent_id)
         conversation_data = await get_session_data(
-            session_id, show_sql_query=show_sql_query, show_db_result=show_db_result)
+            session_id, agent_id=agent_id, show_sql_query=show_sql_query, show_db_result=show_db_result)
         
         return {
             "session_id": session_details['session_id'],

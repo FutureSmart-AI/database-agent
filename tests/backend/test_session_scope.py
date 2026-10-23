@@ -1,9 +1,9 @@
 """Saved conversations stay on their agent and under their agent's answer visibility.
 
-1. A supplied session_id continues a conversation only on the agent that created it. History
-   is read by session_id alone, so without the check a caller allowed to use agent A could
-   pass a session created on agent B and have B's questions and answers replayed into A's
-   model context (and appended to B's session).
+1. A session this API created for agent B cannot be continued on agent A: refused before any
+   history read or model call. A session id the API never created (the platform
+   chat service sends its own thread id) continues, with only this agent's turns as history —
+   test_session_storage.py checks that scoping on real SQL.
 2. A replayed conversation applies the agent's `show_sql_query` / `show_db_result` exactly as
    the live answer does, on every route that serves saved turns (session detail, session
    messages, CSV export) — not only in clients that choose to hide the fields.
@@ -35,12 +35,10 @@ ROWS = '[["North", 250.0], ["row-only-region", 200.0]]'  # a value that appears 
 
 
 def session_store(owner_agent):
-    """get_session_details as the product implements it: match on session AND agent."""
-    async def get_session_details(session_id, agent_id):
-        if session_id == 'session-of-b' and agent_id == owner_agent:
-            return {'session_id': session_id, 'created_time': None, 'session_title': 't'}
-        return None
-    return AsyncMock(side_effect=get_session_details)
+    """get_session_agent_ids: the agents a session this API created belongs to."""
+    async def get_session_agent_ids(session_id):
+        return {owner_agent} if session_id == 'session-of-b' else set()
+    return AsyncMock(side_effect=get_session_agent_ids)
 
 
 def session_module(**attrs):
@@ -77,7 +75,7 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
     async def ask(self, agent_id, session_id):
         body = self.schemas.ChatRequest(query='how many orders?', session_id=session_id)
         with patch.dict(sys.modules, {
-                **session_module(get_session_details=session_store('agent-b')),
+                **session_module(get_session_agent_ids=session_store('agent-b')),
                 'agent.utils.common_utils': types.SimpleNamespace(serialize_db_value=lambda value: value)}):
             return await self.endpoint(agent_id=agent_id, stream=False, body=body,
                                        auth={'auth_type': 'agent_api_key', 'agent_id': agent_id}, user={})
@@ -90,11 +88,14 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
         self.history.assert_not_awaited()
         self.flow.assert_not_awaited()
 
-    async def test_unknown_session_is_refused(self):
-        with self.assertRaises(HTTPException) as caught:
-            await self.ask('agent-b', 'never-created')
-        self.assertEqual(caught.exception.status_code, 404)
-        self.flow.assert_not_awaited()
+    async def test_session_id_the_api_never_created_continues_on_this_agent(self):
+        # The platform chat service's own thread id: not refused; history is asked for this
+        # agent's turns only (the read itself is scoped; see test_session_storage.py).
+        response = await self.ask('agent-a', 'chat-service-thread')
+        self.assertEqual(response.status_code, 200)
+        session_id, _, agent_id, _ = self.history.await_args.args
+        self.assertEqual((session_id, agent_id), ('chat-service-thread', 'agent-a'))
+        self.flow.assert_awaited_once()
 
     async def test_own_session_continues(self):
         response = await self.ask('agent-b', 'session-of-b')
@@ -139,7 +140,7 @@ class ReplayVisibilityTests(unittest.IsolatedAsyncioTestCase):
 
     async def replay(self, show_sql_query, show_db_result):
         return await replay_function([stored_row()])(
-            's1', show_sql_query=show_sql_query, show_db_result=show_db_result)
+            's1', agent_id='agent-visible', show_sql_query=show_sql_query, show_db_result=show_db_result)
 
     async def test_each_setting_controls_its_own_field(self):
         for show_sql, show_rows in ((True, True), (False, True), (True, False), (False, False)):
@@ -166,7 +167,7 @@ class ReplayVisibilityTests(unittest.IsolatedAsyncioTestCase):
 
     async def test_turns_without_a_stored_block_replay_none(self):
         _, assistant = await replay_function([stored_row(debug_info={})])(
-            's1', show_sql_query=True, show_db_result=True)
+            's1', agent_id='agent-visible', show_sql_query=True, show_db_result=True)
         self.assertIsNone(assistant['result'])
         self.assertEqual(assistant['debug_info']['db_output'], ROWS)
 
@@ -175,7 +176,7 @@ class ReplayVisibilityTests(unittest.IsolatedAsyncioTestCase):
             await replay_function([stored_row()])('s1')
 
     def test_every_product_caller_passes_both_settings(self):
-        """A gate on the call sites: no route can serve saved turns without the settings."""
+        """A gate on the call sites: no route can serve saved turns without the agent and its settings."""
         callers = []
         for path in BACKEND.rglob('*.py'):
             if 'tests' in path.parts:
@@ -189,7 +190,7 @@ class ReplayVisibilityTests(unittest.IsolatedAsyncioTestCase):
         self.assertTrue(callers)
         for where, keywords in callers:
             with self.subTest(caller=where):
-                self.assertLessEqual({'show_sql_query', 'show_db_result'}, keywords)
+                self.assertLessEqual({'agent_id', 'show_sql_query', 'show_db_result'}, keywords)
 
 
 def visibility(flags_by_agent):
@@ -259,22 +260,34 @@ class SavedConversationRouteTests(unittest.IsolatedAsyncioTestCase):
 
 
 class CsvExportVisibilityTests(unittest.IsolatedAsyncioTestCase):
-    """The CSV export is the turn's rows: refused for an agent that hides them."""
+    """The CSV export is the turn's rows: refused for an agent that hides them, and an agent
+    key reaches only its own agent's turns."""
 
-    async def export(self, agent):
+    async def export(self, agent, auth=None):
         presign = self.presign = AsyncMock(return_value='https://synthetic.example.test/export.csv')
         s3 = types.SimpleNamespace(build_export_s3_key=lambda *parts: '/'.join(parts),
                                    generate_export_presigned_url=presign,
                                    check_s3_object_exists=AsyncMock(return_value=True), CSV_EXPORT_URL_EXPIRY=900)
+        turn = types.SimpleNamespace(agent_id=agent, chat_id='c1', sql_query=SQL)
+
+        async def lookup(session_id, chat_id, agent_id=None):  # the product query's agent filter
+            return turn if agent_id in (None, turn.agent_id) else None
         route = load_function('api/v1/routers/chat.py', 'export_session_csv',
                               Path=Path, Query=Query, Depends=Depends, HTTPException=HTTPException,
                               JSONResponse=JSONResponse, get_api_key_or_session=lambda: {},
-                              get_chat_log_for_export=AsyncMock(return_value=types.SimpleNamespace(
-                                  agent_id=agent, chat_id='c1', sql_query=SQL)),
+                              get_chat_log_for_export=AsyncMock(side_effect=lookup),
                               get_agent_with_visibility=visibility(AGENTS))
         parents = {n: types.ModuleType(n) for n in ('agent', 'agent.utils')}
         with patch.dict(sys.modules, {**parents, 'agent.utils.s3_export_utils': s3}):
-            return await route(session_id="s1", chat_id="c1", auth={})
+            return await route(session_id="s1", chat_id="c1", auth=auth or {'auth_type': 'master_api_key'})
+
+    async def test_agent_key_reaches_only_its_own_agents_turns(self):
+        own = await self.export('agent-visible', {'auth_type': 'agent_api_key', 'agent_id': 'agent-visible'})
+        self.assertEqual(own.status_code, 200)
+        with self.assertRaises(HTTPException) as caught:
+            await self.export('agent-visible', {'auth_type': 'agent_api_key', 'agent_id': 'agent-other'})
+        self.assertEqual(caught.exception.status_code, 404)
+        self.presign.assert_not_awaited()
 
     async def test_visible_agent_gets_a_download_link(self):
         response = await self.export("agent-visible")

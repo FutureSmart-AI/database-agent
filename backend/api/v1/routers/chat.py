@@ -350,7 +350,10 @@ async def export_session_csv(
         build_export_s3_key, generate_export_presigned_url,
         check_s3_object_exists, CSV_EXPORT_URL_EXPIRY,
     )
-    chat_log = await get_chat_log_for_export(session_id, chat_id)
+    # This path names no agent, so an agent key is scoped by an `agent_id` query parameter the
+    # caller chooses: only that agent's turns can be found with it.
+    key_agent = auth.get("agent_id") if auth.get("auth_type") == "agent_api_key" else None
+    chat_log = await get_chat_log_for_export(session_id, chat_id, agent_id=key_agent)
     if not chat_log:
         detail = f"Chat turn {chat_id} not found" if chat_id else "No SQL result found for this session"
         raise HTTPException(status_code=404, detail=detail)

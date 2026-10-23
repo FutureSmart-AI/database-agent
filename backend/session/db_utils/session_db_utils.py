@@ -59,6 +59,14 @@ async def get_past_conversation(session_id):
 		logger.error(f"Error getting past conversation: {e}")
 		raise
 
+async def get_session_agent_ids(session_id: str) -> set:
+	"""The agents a session created by this API belongs to; empty when it never created one."""
+	async with get_async_session() as session:
+		res = await session.execute(
+			select(ChatSessions.chatbot_id, ChatSessions.agent_id).where(ChatSessions.session_id == session_id)
+		)
+		return {agent for row in res.all() for agent in row if agent}
+
 async def get_session_details(session_id: str, agent_id: str):
 	"""
 	Return dict with session_id, created_time, session_title or None.
@@ -382,20 +390,24 @@ def _chart_for_replay(row) -> Optional[dict]:
 	return None
 
 
-async def get_session_data(session_id: str, *, show_sql_query: bool, show_db_result: bool):
-	"""A saved conversation, under the agent's answer visibility settings.
+async def get_session_data(session_id: str, *, agent_id: str, show_sql_query: bool, show_db_result: bool):
+	"""A saved conversation — this agent's turns — under the agent's answer visibility settings.
 
-	The flags are required (no default) so every caller decides: live chat leaves the SQL
-	out when `show_sql_query` is off and the rows out when `show_db_result` is off, and a
-	replay must not hand back what the live answer withheld. Pass them from
-	`get_agent_with_visibility`, the same resolution live chat uses.
+	All three are required (no default) so every caller decides. Only `agent_id`'s turns are
+	served: a session id can carry another agent's turns too (a chat service may send its own
+	thread id to every agent it calls). Live chat leaves the SQL out when `show_sql_query` is
+	off and the rows out when `show_db_result` is off, and a replay must not hand back what the
+	live answer withheld. Pass the flags from `get_agent_with_visibility`, the same resolution
+	live chat uses.
 	"""
 	try:
 		logger.info(f"Getting session data for session_id: {session_id}")
 		session_data = []
 		async with get_async_session() as session:
 			res = await session.execute(
-				select(ChatLogs).where(ChatLogs.session_id == session_id).order_by(ChatLogs.created_at)
+				select(ChatLogs).where(
+					ChatLogs.session_id == session_id, ChatLogs.agent_id == agent_id,
+				).order_by(ChatLogs.created_at)
 			)
 			rows = res.all()
 			logger.info(f"Found {len(rows) if rows else 0} messages for session {session_id}")
