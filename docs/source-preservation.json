@@ -1100,9 +1100,9 @@
     },
     "backend/api/v1/routers/chat.py": {
       "baseline_sha256": "2649938a3a23278b9a3ad952853436987b27e2918787af6b813b272059a47d78",
-      "current_sha256": "cf916be23d558e1b8da82355f21e2cff7ae87f04ee4cfa3a496242c24c192642",
-      "issue": "DA-011 / DA-MCP-001",
-      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending. DA-MCP-001: session-agent scope check before history/model."
+      "current_sha256": "33a934b2c435167b37273b70c5cd798dce33108aa00af2887a430d355d57553a",
+      "issue": "DA-011 / DA-MCP-001, DA-MCP-002",
+      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending. DA-MCP-001: session-agent scope check before history/model. DA-MCP-002: Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     },
     "backend/api/v1/utils/tables_helper.py": {
       "baseline_sha256": "7d02daefc0bd22fe516fdfbfd26d034c3b55c05655fcb1fd4bd9a42029d1d09b",
@@ -1124,15 +1124,21 @@
     },
     "backend/api/v1/utils/chat_helper.py": {
       "baseline_sha256": "a19c1b056d58c9cf570b77eb5d6ff7e6e845a01648056636ba2b8f6f20d66385",
-      "current_sha256": "d545db45dc86dc5521a561abb31ea63652f100142d206184e61f59d7823fedd6",
-      "issue": "DA-MCP-001",
-      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change."
+      "current_sha256": "644a6116d0751a22eb192c79fc8daf7fb03184fe4088cd456652fcdc47ef6c5c",
+      "issue": "DA-MCP-001, DA-MCP-002",
+      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     },
     "backend/session/db_utils/session_db_utils.py": {
       "baseline_sha256": "18e03d5966a451f0b1bc6d5777e2254effc1c1ad248f033d0067c7d7faf64d11",
-      "current_sha256": "08b3aa026c754695bf795f23191cab5f1445eebe5306cab3ced501b9b0e89499",
-      "issue": "DA-MCP-001",
-      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change."
+      "current_sha256": "d6caed78e543be6de6fde5a7c8a2a7e148196e1cba02ba2910cc5c297b1272c0",
+      "issue": "DA-MCP-001, DA-MCP-002",
+      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+    },
+    "backend/api/v1/routers/sessions.py": {
+      "baseline_sha256": "77f78284e95e36bec167d39cbe89ed8f8969ce958425882905360f1650f7e638",
+      "current_sha256": "f92584a9225493f809a266cf4d3c388d4afd87a2a794047a9596a8bae2bf6479",
+      "issue": "DA-MCP-002",
+      "reason": "Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
     }
   }
 }

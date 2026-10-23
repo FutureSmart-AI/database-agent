@@ -349,20 +349,16 @@ async def get_chat_log_for_export(session_id: str, chat_id: Optional[str]):
 
 
 async def get_session_messages_data(session_id: str, agent_id: str) -> dict:
-    """Verify agent exists then return session conversation data."""
-    async for session in get_async_session():
-        result = await session.execute(
-            select(ChatbotDetails).where(ChatbotDetails.agent_id == agent_id)
-        )
-        agent = result.scalar_one_or_none()
-        if not agent:
-            raise HTTPException(status_code=404, detail=f"Agent {agent_id} not found")
+    """Verify agent exists then return session conversation data, under the agent's answer
+    visibility settings (the same ones live chat applies)."""
+    _, show_sql_query, show_db_result, _ = await get_agent_with_visibility(agent_id)
 
     from session.db_utils.session_db_utils import get_session_data, get_session_details
     session_detail = await get_session_details(session_id, agent_id)
     if not session_detail:
         return {"message": "No session data found"}
-    session_data = await get_session_data(session_id)
+    session_data = await get_session_data(
+        session_id, show_sql_query=show_sql_query, show_db_result=show_db_result)
     if session_data:
         return {
             "session_id": session_detail['session_id'],

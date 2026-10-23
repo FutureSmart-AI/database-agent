@@ -131,10 +131,11 @@ and `chart_output`. Send a follow-up to
   `session_id` from another agent returns HTTP 404 before any history is read
   or any model is called. Deployments running an API version older than this
   change do not perform that check.
-- Saved conversations replayed through the API include SQL and rows regardless
-  of the agent's visibility settings. The adapter applies the agent's
-  `show_sql_query` and `show_db_result` to them, matching live answers, but a
-  caller using the API directly with the same key can read them.
+- Saved conversations follow the agent's `show_sql_query` and `show_db_result`
+  in the API itself, exactly as live answers do: a replay leaves out the SQL and
+  rows the agent hides, and CSV export returns HTTP 403 when rows are hidden.
+  Deployments running an API version older than this change return them; the
+  adapter applies the same settings either way.
 - An agent key can list and read every conversation on its own agent, not only
   the ones it created.
 
@@ -142,8 +143,8 @@ and `chart_output`. Send a follow-up to
 
 `tests/mcp` checks the adapter through real MCP client sessions, in memory and
 over stdio, against a synthetic API with the product's credential rules. CI runs
-it with `tests/backend/test_session_scope.py`, which covers the session check
-and saved-result replay in the API itself.
+it with `tests/backend/test_session_scope.py`, which covers the session check,
+saved-result replay and saved-conversation visibility in the API itself.
 
 The integration was also run end to end on a disposable installation of this
 branch (Compose stack, default model profile, the synthetic `sample_sales`

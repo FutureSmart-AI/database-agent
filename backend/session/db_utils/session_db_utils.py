@@ -382,7 +382,14 @@ def _chart_for_replay(row) -> Optional[dict]:
 	return None
 
 
-async def get_session_data(session_id: str):
+async def get_session_data(session_id: str, *, show_sql_query: bool, show_db_result: bool):
+	"""A saved conversation, under the agent's answer visibility settings.
+
+	The flags are required (no default) so every caller decides: live chat leaves the SQL
+	out when `show_sql_query` is off and the rows out when `show_db_result` is off, and a
+	replay must not hand back what the live answer withheld. Pass them from
+	`get_agent_with_visibility`, the same resolution live chat uses.
+	"""
 	try:
 		logger.info(f"Getting session data for session_id: {session_id}")
 		session_data = []
@@ -417,12 +424,16 @@ async def get_session_data(session_id: str):
 					}
 					# Build debug info (no dedicated debug_info column in DB)
 					if any([row_obj.user_query, row_obj.refined_query, row_obj.sql_query, row_obj.db_output]):
-						assistant_message["debug_info"] = {
+						debug_info = {
 							"query": row_obj.user_query,
 							"refine_query": row_obj.refined_query,
-							"sql_query": row_obj.sql_query,
-							"db_output": row_obj.db_output
 						}
+						# Same omission as the live answer: the key is left out, not nulled.
+						if show_sql_query:
+							debug_info["sql_query"] = row_obj.sql_query
+						if show_db_result:
+							debug_info["db_output"] = row_obj.db_output
+						assistant_message["debug_info"] = debug_info
 					else:
 						assistant_message["debug_info"] = None
 					# The ONLY change to this payload: the chart is sent instead of a
@@ -430,10 +441,11 @@ async def get_session_data(session_id: str):
 					assistant_message["graph_output"] = _chart_for_replay(row_obj)
 					# Additive: the column-labelled result block stored for this turn
 					# ({columns, rows, row_count, truncated}); `db_output` above keeps bare rows
-					# without column names. None for turns stored before the block existed.
+					# without column names. None for turns stored before the block existed, and
+					# when the agent hides result rows.
 					stored_debug = getattr(row_obj, "debug_info", None)
 					assistant_message["result"] = (
-						stored_debug.get("db_result") if isinstance(stored_debug, dict) else None
+						stored_debug.get("db_result") if show_db_result and isinstance(stored_debug, dict) else None
 					)
 					session_data.append(assistant_message)
 		logger.info(f"Returning {len(session_data)} total messages for session {session_id}")

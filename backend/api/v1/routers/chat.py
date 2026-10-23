@@ -356,6 +356,11 @@ async def export_session_csv(
         raise HTTPException(status_code=404, detail=detail)
     if not chat_log.sql_query:
         raise HTTPException(status_code=404, detail="This chat turn has no SQL result to export")
+    # The CSV is the turn's rows: an agent that hides result rows does not hand them out here
+    # either. Checked against the agent that produced the turn.
+    _, _, show_db_result, _ = await get_agent_with_visibility(chat_log.agent_id)
+    if not show_db_result:
+        raise HTTPException(status_code=403, detail="Result rows are hidden for this agent")
     s3_key = build_export_s3_key(chat_log.agent_id, session_id, chat_log.chat_id)
     if not await check_s3_object_exists(s3_key):
         raise HTTPException(status_code=404, detail="Export file not available. The query may have been made before export was enabled.")
