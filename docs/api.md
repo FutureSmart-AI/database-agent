@@ -3,7 +3,8 @@
 Local API root: `http://127.0.0.1:18000/nl2sql/api`.
 Interactive reference: [/nl2sql/api/docs](http://127.0.0.1:18000/nl2sql/api/docs).
 Machine contract: [/nl2sql/api/openapi.json](http://127.0.0.1:18000/nl2sql/api/openapi.json).
-The UI calls the same product API through its same-origin proxy.
+The UI calls the same product API through its same-origin proxy. MCP clients
+such as Claude Code can call it through the [MCP server](mcp.md).
 
 Trusted operator clients use the private `FASTAPI_SECRET_KEY` as `X-API-Key`.
 The agent-key endpoint issues a narrower agent credential for chat. Keep both
@@ -19,6 +20,9 @@ uses the signed HTTP-only session cookie; no hosted Auth service is required.
 | `POST /v1/agents/{id}/databases/{db_id}/tables` | Supply table descriptions/visibility |
 | `POST /v1/agents/{id}/api-keys` | Issue an agent key; never log the returned key |
 | `POST /v1/agents/{id}/chat?stream=false` | Direct question with JSON response |
+| `POST /v1/agents/{id}/sessions/{session_id}/messages?stream=false` | Follow-up in a conversation; the session must belong to this agent |
+| `GET /v1/agents/{id}/sessions` | Saved conversations on the agent |
+| `GET /v1/agents/{id}/sessions/{session_id}` | A saved conversation, each answer with its SQL, `result` rows and chart |
 
 Use the generated OpenAPI contract for complete request/response fields and
 streaming options. `tests/evaluation/run.py` is a small working client example:

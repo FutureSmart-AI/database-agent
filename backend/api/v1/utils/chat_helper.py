@@ -52,6 +52,20 @@ async def get_past_messages_safe(session_id, user_id, agent_id, user_query):
         return {"past_messages": [], "session_id": session_id}
 
 
+async def ensure_session_belongs_to_agent(session_id: Optional[str], agent_id: str) -> None:
+    """Refuse to continue a session that was not created on this agent.
+
+    History is read by session_id alone (get_past_conversation_safe), so an unchecked id would
+    replay another agent's questions and answers into this agent's model context and append the
+    new turn to that foreign session. A new conversation (no id) is always allowed.
+    """
+    if not session_id or session_id in ["", "string"]:
+        return
+    from session.db_utils.session_db_utils import get_session_details
+    if not await get_session_details(session_id, agent_id):
+        raise HTTPException(status_code=404, detail=f"Session {session_id} not found for agent {agent_id}")
+
+
 async def get_owner_email_by_agent_id(agent_id: str) -> Optional[str]:
     try:
         async for session in get_async_session():

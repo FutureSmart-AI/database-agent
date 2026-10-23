@@ -1100,9 +1100,9 @@
     },
     "backend/api/v1/routers/chat.py": {
       "baseline_sha256": "2649938a3a23278b9a3ad952853436987b27e2918787af6b813b272059a47d78",
-      "current_sha256": "754fbc5e7afe30b250cd4926850d6ccff55d80537bd6357d6fef563f77585c0d",
-      "issue": "DA-011",
-      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending."
+      "current_sha256": "cf916be23d558e1b8da82355f21e2cff7ae87f04ee4cfa3a496242c24c192642",
+      "issue": "DA-011 / DA-MCP-001",
+      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending. DA-MCP-001: session-agent scope check before history/model."
     },
     "backend/api/v1/utils/tables_helper.py": {
       "baseline_sha256": "7d02daefc0bd22fe516fdfbfd26d034c3b55c05655fcb1fd4bd9a42029d1d09b",
@@ -1121,6 +1121,18 @@
       "current_sha256": "b7f39614c9c16ea17ce3418303d567ae0d3762e0b900dd1770f4c0f8c02df1ec",
       "issue": "DA-013",
       "reason": "Independently accepted prompt-only business template inheritance of the central model profile; template instructions and SQL/security guards preserved. Fresh runtime acceptance pending."
+    },
+    "backend/api/v1/utils/chat_helper.py": {
+      "baseline_sha256": "a19c1b056d58c9cf570b77eb5d6ff7e6e845a01648056636ba2b8f6f20d66385",
+      "current_sha256": "d545db45dc86dc5521a561abb31ea63652f100142d206184e61f59d7823fedd6",
+      "issue": "DA-MCP-001",
+      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change."
+    },
+    "backend/session/db_utils/session_db_utils.py": {
+      "baseline_sha256": "18e03d5966a451f0b1bc6d5777e2254effc1c1ad248f033d0067c7d7faf64d11",
+      "current_sha256": "08b3aa026c754695bf795f23191cab5f1445eebe5306cab3ced501b9b0e89499",
+      "issue": "DA-MCP-001",
+      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change."
     }
   }
 }

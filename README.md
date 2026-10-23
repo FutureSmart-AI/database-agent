@@ -32,6 +32,10 @@ Open source · Apache-2.0 · Self-hostable
 - **Use the API or customise the application.** Call the same agents from your
   own software through the [direct product API](docs/api.md), or change the
   open-source implementation and its [model configuration](docs/model-configuration.md).
+- **Ask from Claude Code and other MCP clients.** The included
+  [MCP server](docs/mcp.md) exposes your agents as tools: ask a question and get
+  the answer, SQL, rows and chart metadata, continue the conversation, or read
+  saved results.
 
 ![Database Agent answering a synthetic sales question](docs/images/sales-overview.png)
 
@@ -152,6 +156,7 @@ you intend to erase this installation's data.
 
 - [Configuration and authentication](docs/configuration.md)
 - [Direct product API and OpenAPI reference](docs/api.md)
+- [MCP server for Claude Code and other MCP clients](docs/mcp.md)
 - [AWS deployment: ECS/Fargate and static UI](docs/aws-deployment.md)
 - [Development and reproducible evaluation](docs/development.md)
 - [Architecture](docs/architecture.md) and [source layout](docs/source-layout.md)

@@ -57,7 +57,7 @@ class ProductTreeTests(unittest.TestCase):
         files = tracked_files()
         roots = {p.split("/")[0] for p in files}
         allowed = {".env.example", ".gitattributes", ".github", ".gitignore", "README.md", "LICENSE", "NOTICE",
-                   "backend", "frontend", "deploy", "docs", "tests", "internal", "compose.yaml"}
+                   "backend", "frontend", "mcp-server", "deploy", "docs", "tests", "internal", "compose.yaml"}
         self.assertEqual(roots - allowed, set())
         for prefix in ("saas db/", "saas evals/", "spider evals/", "evals/", "scripts/", "standalone/"):
             self.assertFalse(any(p.startswith(prefix) for p in files), prefix)
