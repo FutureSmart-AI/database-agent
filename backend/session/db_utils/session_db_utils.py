@@ -477,10 +477,13 @@ async def get_session_chat_counter_from_db(session_id: str):
 		logger.error(f"Error getting session chat counter: {e}")
 		return None
 				
-async def add_user_feedback(session_id: str, chat_id: str, feedback: str, corrected_sql: str = None):
+async def add_user_feedback(session_id: str, chat_id: str, feedback: str, corrected_sql: str = None, *, agent_id: str):
+	"""Record feedback on one of `agent_id`'s turns. A turn of another agent is not found, so a
+	caller allowed to use one agent cannot rewrite another agent's stored verdict or SQL."""
 	try:
 		async with get_async_session() as session:
-			res = await session.execute(select(ChatLogs).where(ChatLogs.session_id == session_id, ChatLogs.chat_id == chat_id))
+			res = await session.execute(select(ChatLogs).where(
+				ChatLogs.session_id == session_id, ChatLogs.chat_id == chat_id, ChatLogs.agent_id == agent_id))
 			row = res.first()
 			if not row:
 				return

@@ -80,6 +80,8 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
                                    HTTPException=HTTPException)
         self.export_row = load_function("api/v1/utils/chat_helper.py", "get_chat_log_for_export",
                                         get_async_session=session_gen, **common)
+        self.feedback = load_function("session/db_utils/session_db_utils.py", "add_user_feedback",
+                                      get_async_session=session_cm, **common)
 
     async def asyncTearDown(self):
         from sqlalchemy import text
@@ -127,6 +129,14 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
         b_turn = (await self.export_row(self.thread, None, agent_id=self.b)).chat_id
         self.assertIsNone(await self.export_row(self.thread, b_turn, agent_id=self.a))
         self.assertEqual((await self.export_row(self.thread, b_turn)).agent_id, self.b)  # master key: unscoped
+
+    async def test_feedback_reaches_only_this_agents_turns(self):
+        b_turn = (await self.export_row(self.created_on_b, None, agent_id=self.b)).chat_id
+        await self.feedback(self.created_on_b, b_turn, "rejected", "SELECT 'rewritten by A'", agent_id=self.a)
+        unchanged = await self.export_row(self.created_on_b, b_turn)
+        self.assertEqual((unchanged.feedback, unchanged.sql_query), (None, f"SELECT '{self.b}'"))
+        await self.feedback(self.created_on_b, b_turn, "accepted", None, agent_id=self.b)
+        self.assertEqual((await self.export_row(self.created_on_b, b_turn)).feedback, "accepted")
 
 
 if __name__ == "__main__":
