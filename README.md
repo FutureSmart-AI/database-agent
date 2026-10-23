@@ -1,17 +1,49 @@
 # FutureSmart Database Agent
 
-**A working, opinionated AI Database Agent by [FutureSmart AI](https://futuresmart.ai/), released under Apache-2.0. A complete UI and backend reference application that shows how [AI Demos](https://aidemos.com/) research becomes product improvements.**
+**An open-source AI Database Agent by [FutureSmart AI](https://futuresmart.ai/). Ask questions about your SQL database in plain English.**
 
-This is a working Database Agent that lets you connect a SQL database, ask questions in natural language, inspect generated SQL, explore results, and create visualizations.
+Connect PostgreSQL or MySQL, turn natural-language questions into SQL, inspect
+the results, explore charts, and keep asking follow-up questions without writing
+SQL yourself.
 
-**[Try the live application →](https://futuresmart.ai/solutions/database-agent)** · [Run it locally](#install) · [Research & improvements](docs/improvements/README.md)
+Whether you want to explore business data, build an AI-powered application, or
+adapt a complete database agent to your own requirements, you can use the
+hosted application, deploy it yourself, or integrate it through its API.
 
-## How AI Demos research improves Database Agent
+**[Try the live application →](https://futuresmart.ai/solutions/database-agent)** · [Run it locally](#install) · [Explore the API](docs/api.md)
 
-We use findings from [AI Demos](https://aidemos.com/) to investigate product
-failures and improve this working, open-source reference application. Our
-[improvement history](docs/improvements/README.md) connects published findings,
-engineering decisions, code and verification, while preserving the failures.
+Open source · Apache-2.0 · Self-hostable
+
+## What you can do
+
+- **Ask questions about your data.** Explore customers, orders, revenue,
+  products and anything else in the database you connect.
+- **Inspect the SQL and results.** Every answer shows the SQL that was generated
+  and the rows it returned, so you can check how the answer was reached.
+- **Explore charts.** View supported results as charts alongside the table to
+  see comparisons, trends and patterns.
+- **Continue the conversation.** Ask follow-up questions, narrow a result, and
+  reopen saved conversations later.
+- **Try it with sample data.** The hosted application includes a free demo on a
+  ready-made e-commerce database: a year of synthetic customers, products,
+  orders, payments and returns for a fictional online shop. Sign in, then pick a suggested question or ask your
+  own; you don't need your own database or an OpenAI API key. Each account gets
+  20 free questions per rolling 24 hours and 100 in total.
+- **Use the API or customise the application.** Call the same agents from your
+  own software through the [direct product API](docs/api.md), or change the
+  open-source implementation and its [model configuration](docs/model-configuration.md).
+
+![Database Agent answering a synthetic sales question](docs/images/sales-overview.png)
+
+## Improved through real-world AI research
+
+We use findings from [AI Demos](https://aidemos.com/) to identify limitations,
+investigate issues and improve Database Agent. Our public
+[improvement history](docs/improvements/README.md) connects benchmark results to
+engineering decisions, code changes and verification, while preserving the
+failures.
+
+[Explore the improvement history](docs/improvements/README.md) · [View published benchmark results](https://aidemos.com/benchmarks/ai-database-agents/tools/futuresmart-ai-database-agent)
 
 ### Example: an answer using the wrong data
 
@@ -44,8 +76,6 @@ The repository includes the backend, web interface, database integrations, sampl
 You can run the application, explore its architecture, reproduce supported test cases, and adapt the implementation to your own requirements.
 
 We prioritize correctness, reliability, reproducibility, and a usable product experience over adding every feature found in commercial database-agent platforms.
-
-![Database Agent answering a synthetic sales question](docs/images/sales-overview.png)
 
 One repository contains the FastAPI backend and Next.js UI. The supported stack
 uses Docker Compose, PostgreSQL metadata, and Qdrant vectors. Source connections
