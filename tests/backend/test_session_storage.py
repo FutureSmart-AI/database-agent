@@ -33,7 +33,17 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
         from sqlmodel import select
         from models.sql_models import ChatLogs, ChatSessions
 
-        self.engine = create_async_engine(TEST_URL)
+        from sqlalchemy import text
+
+        # A schema of its own: the shared CI database may already hold older shapes of these
+        # tables (created by other suites), which create_all would silently keep.
+        run = uuid.uuid4().hex[:8]
+        self.schema = f"session_storage_{run}"
+        boot = create_async_engine(TEST_URL)
+        async with boot.begin() as conn:
+            await conn.execute(text(f'CREATE SCHEMA "{self.schema}"'))
+        await boot.dispose()
+        self.engine = create_async_engine(TEST_URL, connect_args={"server_settings": {"search_path": self.schema}})
         async with self.engine.begin() as conn:
             await conn.run_sync(lambda c: ChatSessions.metadata.create_all(
                 c, tables=[ChatSessions.__table__, ChatLogs.__table__]))
@@ -48,7 +58,6 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
             async with factory() as s:
                 yield s
 
-        run = uuid.uuid4().hex[:8]
         self.a, self.b = f"NL2SQL_A_{run}", f"NL2SQL_B_{run}"
         self.created_on_b = f"created-on-b-{run}"      # a session this API created for agent B
         self.thread = f"chat-service-thread-{run}"     # an id only the chat service knows
@@ -86,8 +95,7 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
     async def asyncTearDown(self):
         from sqlalchemy import text
         async with self.engine.begin() as conn:
-            await conn.execute(text("DELETE FROM nl2sql_logs WHERE agent_id IN (:a, :b)"), {"a": self.a, "b": self.b})
-            await conn.execute(text("DELETE FROM chat_sessions WHERE agent_id = :b"), {"b": self.b})
+            await conn.execute(text(f'DROP SCHEMA "{self.schema}" CASCADE'))
         await self.engine.dispose()
 
     async def guarded(self, session_id, agent_id):
