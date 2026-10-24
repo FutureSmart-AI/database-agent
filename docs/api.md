@@ -1,6 +1,10 @@
 # Direct product API
 
 Local API root: `http://127.0.0.1:18000/nl2sql/api`.
+Hosted API root: `https://futuresmart.ai/database-agent/api`, with the same routes
+below and an interactive reference at
+[/database-agent/api/docs](https://futuresmart.ai/database-agent/api/docs). The
+hosted `https://app.futuresmart.ai/nl2sql/api` root keeps working.
 Interactive reference: [/nl2sql/api/docs](http://127.0.0.1:18000/nl2sql/api/docs).
 Machine contract: [/nl2sql/api/openapi.json](http://127.0.0.1:18000/nl2sql/api/openapi.json).
 The UI calls the same product API through its same-origin proxy. MCP clients

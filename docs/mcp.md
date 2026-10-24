@@ -52,7 +52,7 @@ curl -s -X POST "http://127.0.0.1:18000/nl2sql/api/v1/agents/$AGENT_ID/api-keys"
 
 | Setting | Purpose |
 |---|---|
-| `DATABASE_AGENT_URL` | API root; default `http://127.0.0.1:18000/nl2sql/api`. Plain HTTP is refused for non-loopback hosts unless `DATABASE_AGENT_ALLOW_INSECURE_HTTP=1` |
+| `DATABASE_AGENT_URL` | API root; default `http://127.0.0.1:18000/nl2sql/api`. For the hosted product use `https://futuresmart.ai/database-agent/api` with a key issued there. Plain HTTP is refused for non-loopback hosts unless `DATABASE_AGENT_ALLOW_INSECURE_HTTP=1` |
 | `DATABASE_AGENT_AGENT_KEYS` | `AGENT_ID=KEY` pairs, comma- or newline-separated. Recommended |
 | `DATABASE_AGENT_API_KEY` | Operator (master) key, `FASTAPI_SECRET_KEY`. Reaches every agent; only for a trusted single-operator installation |
 | `DATABASE_AGENT_TIMEOUT_SECONDS` | Per-request timeout; default 180 |
