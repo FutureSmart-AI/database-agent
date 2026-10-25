@@ -96,6 +96,13 @@ def main():
     files[MANIFEST] = (manifest(files, source_commit), 0o644)
     write(public, files)
     git(public, "add", "--all", "--", ".")
+    # Record each file's mode in the index directly: a filesystem chmod is not seen by Git
+    # on Windows (core.filemode=false), which would publish release scripts non-executable.
+    for line in git(public, "ls-files", "-s").decode().splitlines():
+        mode, _, _, name = line.split(maxsplit=3)
+        wanted = "100755" if files[name][1] & 0o111 else "100644"
+        if mode != wanted:
+            git(public, "update-index", "--chmod=" + ("+x" if wanted == "100755" else "-x"), "--", name)
     git(public, "commit", "--quiet", "-m",
         f"Release from the development repository at {source_commit[:12]}\n\n"
         f"{len(changes)} files changed. Exported by deploy/publish_public.py; see docs/publication.md."

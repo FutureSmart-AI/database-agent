@@ -1,0 +1,51 @@
+{
+  "id": "DA-021",
+  "date_IST": "2026-10-25",
+  "decision": "Pradip, 2026-10-25: FutureSmart-AI/fs-agent-nl2sql is the single Database Agent development repository; the hosted frontend deploys from it and the public repository is published from it.",
+  "brought_into_this_repository": {
+    "from_database_agent_ui": "PRs 6-9 merged there after the 2026-10-20 import (base 6925418): sample-data entry, free-question allowance, Report a problem, table count, suggestion focus, canonical API root, noindex. Three-way merge, no conflicts.",
+    "from_public_repository": "Direct edits since its export from 2bbc7ef (public PRs 4-9): MCP server and tests, saved-replay result block, LICENSE/NOTICE, publication and S64 docs, README and improvement index. Nine conflicts resolved keeping the newer DA-014...DA-020 code."
+  },
+  "changes": "Development repository PRs 111 (consolidation), 112 (deploy step working directory), 113 (release scripts executable + test), 114 (publisher records file modes).",
+  "hosted_frontend": {
+    "workflow": ".github/workflows/frontend-deploy.yml on merge to main, OIDC role gh-deploy-database-agent-frontend-production (trusts only this repository's main)",
+    "first_attempts": [
+      "run 40211061624 failed in its first step (frontend/ absent before checkout); production untouched",
+      "run 40211573219 archived the release, then promotion failed (script mode 100644); production untouched"
+    ],
+    "release": "run 40212353289 success; app.futuresmart.ai/database-agent/release.txt = 8f8a34c56512c15ff8c62c779bec83c6cacb3273",
+    "live_bundle_contains": [
+      "Try with sample data",
+      "Report a problem",
+      "free questions",
+      "estimated cost / cost not available (Full logs usage)",
+      "futuresmart.ai/database-agent/api",
+      "noindex"
+    ]
+  },
+  "hosted_api": "nl2sql-agent:216, image main-831486a (sha256:5c7c58f0...), rollout COMPLETED; derived from the running revision.",
+  "production_checks_via_public_api_root": {
+    "agent": "NL2SQL_5FAF6E46 (free sample data)",
+    "chat": "top five customers answered; usage latency 20.7 s, 10,002 in / 496 out tokens, est. $0.009929, cost_complete true, select_table and other_calls counted",
+    "follow_up": "Only show the top two -> 2 rows, same session",
+    "stream": "308 orders in March; full_metadata carries usage",
+    "saved_replay": "both assistant turns carry result {columns customer_id, first_name, last_name, total_spend; 5 and 2 rows}",
+    "report_a_problem": "RPT_DB11878E recorded with conversation snapshot, then closed as not_a_bug",
+    "mcp_server": "stdio against the hosted API: 4 tools; get_conversation returned 2 turns with rows"
+  },
+  "public_repository": {
+    "release_commit": "829922f04256aff52b0e0b66bdd4ba69a64f72e3 from 8f8a34c (adopting public 3c3db6a, whose edits were already brought here)",
+    "ci": "Standalone product checks run 40214851786: all 7 jobs success",
+    "guard": "Ruleset 'Releases come from the development repository' on main (update/deletion/non-fast-forward; admin bypass). Deploy keys are disabled by organization policy, so releases are pushed by an admin over SSH until the Public release workflow has a key.",
+    "drift_check": "every development PR runs deploy/publish_public.py --check; PR 114's check passed against the new public main with no adoption"
+  },
+  "archived": {
+    "FutureSmart-AI/database-agent-ui": "archived 2026-10-25 after: no open work (PR 5 imported via PR 73 and closed; demo branches equal their merged commits), deploys switched off (DEPLOY_PRODUCTION_ENABLED=false), its deploy role deleted, no tracked reference in any local clone of an active repository."
+  },
+  "not_archived": {
+    "FutureSmart-AI/futuresmart-agent-ui": "Still the platform app shell (agent.futuresmart.ai root, RAG, DI pages). Its apps/nl2sql copy of this UI is deployed only into the shell bucket, which CloudFront never serves for /database-agent/* or /nl2sql/*; removing that copy is a change in that repository.",
+    "FutureSmart-AI/fs-agent-chat": "Active platform chat service that calls this API.",
+    "FutureSmart-AI/fs-agent-graph": "Historical chart service paused under D-012; retirement is a separate open decision."
+  },
+  "not_verified": "Signed-in browser walkthrough of the hosted UI (sign-in needed); verified instead through the live bundle and the same API calls the UI makes."
+}

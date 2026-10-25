@@ -452,6 +452,20 @@
       "implementation": "tests/evaluation/model_eval; .github/workflows/model-evaluation.yml; backend/agent/utils/model_pricing.py; backend/model_profiles/prices.json; node_metrics.measure_node_calls; chat usage block; Full logs panel. PRs 107, 108, 109.",
       "verification": "Actions runs 40197885883 and 40200542724; hosted task definition nl2sql-agent:214 returns usage with select_table and other_calls; health event node_data carries the estimates.",
       "evidence": "docs/improvements/evidence/2026-10-25-model-evaluation.json"
+    },
+    {
+      "id": "DA-021",
+      "title": "One development repository: hosted interface and public repository produced from it",
+      "date_IST": "2026-10-25",
+      "status": "released",
+      "research_source": "Maintainer decision (repository consolidation), not a benchmark finding",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "The hosted interface was built from a separate UI repository and the public repository carried its own edits (MCP server), so changes merged in the development repository (the usage panel) were not live and public-only work was absent from development.",
+      "root_cause": "The 2026-10-20 consolidation imported the UI but left its repository deploying production, and the public repository was edited directly after its first export.",
+      "engineering_decision": "Bring every change that existed only in the UI or public repository into the development repository; deploy the hosted interface from it; produce the public repository only by an exporter that refuses to overwrite direct public edits; archive the UI repository.",
+      "implementation": "frontend/ (UI PRs 6-9), mcp-server/, tests/mcp, saved-replay result block; .github/workflows/frontend-deploy.yml; deploy/export_source.py and deploy/publish_public.py; .github/workflows/public-release.yml; AGENTS.md.",
+      "verification": "Hosted interface release 8f8a34c and API task definition 216; public-API-root journey on the sample-data agent; public release 829922f with its full check suite passing.",
+      "evidence": "docs/improvements/evidence/2026-10-25-single-development-repository.json"
     }
   ],
   "current_published_results_index": "published-results.json"

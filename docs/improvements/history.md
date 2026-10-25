@@ -709,3 +709,26 @@ twelve-month question; it ended 17 of 36 queries with that limit against the pro
 configuration's cost — had been missing from cost reporting; it is now counted.
 No production model was changed. Evidence: `docs/improvements/evidence/2026-10-25-model-evaluation.json`.
 
+## DA-021 — One development repository for Database Agent (2026-10-25 IST)
+
+Database Agent is now developed in one repository only. The hosted application's interface
+had been built from a separate UI repository, and the public repository had received changes
+of its own (the MCP server among them), so the same product was being edited in three places.
+Everything that existed only in those two copies was brought into the development repository:
+the sample-data entry and free-question allowance, Report a problem and the canonical API root
+from the UI repository, and the MCP server, the saved-replay `result` block it reads, the
+license files and public documentation from the public repository.
+
+The hosted interface now deploys from the development repository on every merge that changes
+it, and the separate UI repository is archived with its history kept. The public repository is
+now a release snapshot: `deploy/publish_public.py` exports one development commit, refuses to
+publish if the public repository was edited directly, and records the exact files and the
+source commit in `docs/source-export.json`. The first release under this process reproduced
+every public change and added the work since its first publication (DA-014 to DA-020).
+
+Verified on the hosted service through the public API root on the free sample-data agent: an
+answer with its usage block, a follow-up, a streamed answer, a saved conversation returning
+column-labelled rows, a problem report with its conversation snapshot, and the MCP server over
+the hosted API. The hosted interface serves the new release with every feature above. The
+public release passed its own complete check suite. Evidence:
+`docs/improvements/evidence/2026-10-25-single-development-repository.json`.
