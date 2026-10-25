@@ -1,5 +1,9 @@
 # MCP server
 
+> Connecting to the hosted product? Follow
+> [MCP server and Claude Code](https://futuresmart.ai/docs/database-agent/mcp) in the
+> developer docs. This page covers the same server against a local installation.
+
 `mcp-server/` lets MCP-compatible AI applications, such as Claude Code, use your
 Database Agent agents as tools. It is a thin adapter over the
 [direct product API](api.md): every tool call is an ordinary API request made

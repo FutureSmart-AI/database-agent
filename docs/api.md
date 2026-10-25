@@ -1,5 +1,10 @@
 # Direct product API
 
+> Using the hosted product? The [developer docs](https://futuresmart.ai/docs/database-agent)
+> have a quickstart, API key guidance, streaming, errors and the full
+> [API reference](https://futuresmart.ai/docs/database-agent/api-reference).
+> This page covers a local or self-hosted installation.
+
 Local API root: `http://127.0.0.1:18000/nl2sql/api`.
 Hosted API root: `https://futuresmart.ai/database-agent/api`, with the same routes
 below and an interactive reference at
