@@ -43,10 +43,13 @@ DEFAULT_LIMITS: Dict[str, Optional[int]] = {
 
 def default_config(owner_id: str) -> Dict[str, Any]:
     """The response body for an owner with no stored configuration."""
+    from agent.utils.provider_key_scope import deployment_default_source
     return {
         "owner_id": owner_id,
         "tier_type": DEFAULT_TIER,
         "base_tier": DEFAULT_BASE_TIER,
         "platform_limits": dict(DEFAULT_LIMITS),
+        # Not a constant here: the deployment chooses (DEFAULT_PROVIDER_KEY_SOURCE).
+        "provider_key_source": deployment_default_source(),
         "is_default": True,
     }

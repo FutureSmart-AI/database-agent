@@ -727,9 +727,9 @@
     },
     "backend/agent/nodes/sql_gen.py": {
       "baseline_sha256": "3a914026d07563bbdeab8b4ca68b9683d71d7576546112d4329221c30e9d34d1",
-      "current_sha256": "e31e34e08c35125c64449d87d829c2741d2c697b1817261801da53a49f4bc2c9",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "ee4f63b8330f2454f3ba63d42a24e1517c0233a860264772ff9e6f076cf1c22a",
+      "issue": "DA-011, DA-ANSWERABILITY-001, DA-020",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. First-query false refusal: no business template by default, refused turns not replayed as history, refusal reason logged. Models, SQL execution and security guards unchanged. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval.",
       "previous_reviewed_change": {
         "baseline_sha256": "3a914026d07563bbdeab8b4ca68b9683d71d7576546112d4329221c30e9d34d1",
         "current_sha256": "620bbba625085a9fb505a26b1fd7da5afc0ba48c50c4abbce513dcedfed5dea5",
@@ -759,10 +759,16 @@
     },
     "backend/agent/runner.py": {
       "baseline_sha256": "f5abe746f1d334657e0bf11512f7982f05af452ff231ec186835b6dfa931d4a4",
-      "current_sha256": "9a0cde1b4f46182ee7f07f7c6418c39b82b3b8e4f054389370dd7f2e3515fb48",
-      "issue": "DA-008 / S60",
-      "reason": "Bounded table-policy and scoped-reference enforcement before source sampling/execution, including required cross-DB failure propagation. Candidate pending independent acceptance; original baseline preserved.",
-      "acceptance": "pending independent review"
+      "current_sha256": "f9ad151dede3f1261b969b828078491d166f82512513244ea7af966b7b08deea",
+      "issue": "DA-014, DA-020",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "f5abe746f1d334657e0bf11512f7982f05af452ff231ec186835b6dfa931d4a4",
+        "current_sha256": "9a0cde1b4f46182ee7f07f7c6418c39b82b3b8e4f054389370dd7f2e3515fb48",
+        "issue": "DA-008 / S60",
+        "reason": "Bounded table-policy and scoped-reference enforcement before source sampling/execution, including required cross-DB failure propagation. Candidate pending independent acceptance; original baseline preserved.",
+        "acceptance": "pending independent review"
+      }
     },
     "backend/agent/state.py": {
       "baseline_sha256": "c904b1dd82b4b1f70f6c3bdb3e8bbe862cbba1664a1e24dd7dd133a4709c1c86",
@@ -787,9 +793,9 @@
     },
     "backend/agent/nodes/check_pandas.py": {
       "baseline_sha256": "abab22823da450d73adf328fe70ac398ab90a08abb7372383f44a14b6895e796",
-      "current_sha256": "0bae1e0a048482ed6f5c0003f0352fb6227db545c6c03d32e362b239ac0fd623",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "b5eb5bb528bde99d95ab28769a027bfccb4c434749c239e36d6f9345588dd636",
+      "issue": "DA-011, DA-020",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval.",
       "previous_reviewed_change": {
         "baseline_sha256": "abab22823da450d73adf328fe70ac398ab90a08abb7372383f44a14b6895e796",
         "current_sha256": "696a395f31bb67cf0f5e4777df09b24a01e28834e2f5b39375137aafc79a2808",
@@ -799,9 +805,9 @@
     },
     "backend/agent/nodes/db_router.py": {
       "baseline_sha256": "dd2ab86e626b93df6e105557fb463c727686577fc296255ea0031136e2f1fa1c",
-      "current_sha256": "0ebb2a632ac8e23c081cd5b0ec31f43734b9629622e86c4700c03960ca16c882",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "d7fe633b03061e329bae93f3afc4cc03f4a58d2fb2c64c3e73a164c0ff2b0257",
+      "issue": "DA-011, DA-020",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval.",
       "previous_reviewed_change": {
         "baseline_sha256": "dd2ab86e626b93df6e105557fb463c727686577fc296255ea0031136e2f1fa1c",
         "current_sha256": "cb388a5fc8b9c507d3e22a0af70bb23aaddbc565001f2d34eea111ea1efbba64",
@@ -811,9 +817,9 @@
     },
     "backend/agent/nodes/final_answer.py": {
       "baseline_sha256": "400efd3abe7d6b20f66964a17a7c4436b3d07d6ed65ba99fb35c0afa8325c9b1",
-      "current_sha256": "e09f9b477f139e21f9469b7d0fd3067e2deaa5b9b0f1986d89f4187f43ef104b",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "63f87e01e66154c8b2ad37e0518ad58f6932e3b69147cdb12a3fbb8ef6fbe37c",
+      "issue": "DA-011, DA-UX-DEMO-001, DA-020",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. The answer prompt receives the owner's descriptions of the tables the query read (units, currency, metric definitions). Models and result handling unchanged. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval.",
       "previous_reviewed_change": {
         "baseline_sha256": "400efd3abe7d6b20f66964a17a7c4436b3d07d6ed65ba99fb35c0afa8325c9b1",
         "current_sha256": "bae638f3d74a096a66f68491cc7f7edba15a43d7532f0a6c024e68e15a303de6",
@@ -823,9 +829,9 @@
     },
     "backend/agent/nodes/router.py": {
       "baseline_sha256": "27d7cfe42434d3e0ffac4c3cf4a0661d046419cc3bc2772a07f5d88528ea85a4",
-      "current_sha256": "fb7f94b6c2476b32281ce80859938a203e63cd81793f099d8b1164ede86fa11d",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "c4827cbebe15733126f05b4a1b813c7250320bddf73735265a5dae6cc6b44252",
+      "issue": "DA-011, DA-020",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval.",
       "previous_reviewed_change": {
         "baseline_sha256": "27d7cfe42434d3e0ffac4c3cf4a0661d046419cc3bc2772a07f5d88528ea85a4",
         "current_sha256": "1d0a901567d73c8d9cec2a942999c426e1f4002f5fd2263956f6d3d602df511f",
@@ -907,39 +913,57 @@
     },
     "backend/api/v1/utils/description_jobs_helper.py": {
       "baseline_sha256": "4d19bb20a41087a427fe2319b9254fce17fa640b0eb4d5f50eb921028982410b",
-      "current_sha256": "2e1633f3ee6c07d086a857af5450f68e13e33286de52502b08132e3dd3262159",
-      "issue": "DA-012",
-      "reason": "Standard table metadata writers emit canonical booleans and preserve exclusions; strict policy readers and SQL/security guards unchanged. Candidate pending runtime qualification.",
+      "current_sha256": "c9c20430e71ff31ff425ac5d7000e80123f34b84365ea7cd5608bd2cc23965f9",
+      "issue": "DA-014, DA-DESC-RACE-001, DA-MEM-002",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. Table-description jobs save through a locked merge that keeps descriptions written while the job ran, and the stored visibility flags. Prompts and models unchanged. Description and table-description jobs inspect the schema inside the heavy_work gate; the routing description samples 3 values with LIMIT instead of reading every distinct value. Prompts and models unchanged.",
       "previous_reviewed_change": {
         "baseline_sha256": "4d19bb20a41087a427fe2319b9254fce17fa640b0eb4d5f50eb921028982410b",
-        "current_sha256": "30f640193be44753292e79feac4b6e9c694fd1812d638a8ceb7390ee9d6c134d",
-        "issue": "DA-011",
-        "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+        "current_sha256": "091c6b4fdc0c01c8cad913ee566a9acf06ad8ac559d8e712779e4c648b578dd6",
+        "issue": "DA-014, DA-DESC-RACE-001",
+        "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. Table-description jobs save through a locked merge that keeps descriptions written while the job ran, and the stored visibility flags. Prompts and models unchanged.",
         "previous_reviewed_change": {
           "baseline_sha256": "4d19bb20a41087a427fe2319b9254fce17fa640b0eb4d5f50eb921028982410b",
-          "current_sha256": "2585e80b19666aab01f3d4a025145ea602ce8be252c0e5e354c5d74aa6babafa",
-          "issue": "DA-009",
-          "reason": "Scoped OpenAI model defaults/client endpoint compatibility only; original source baseline retained. Source candidate pending independent review; production overlay uses deployed174 and excludes unrelated current-main behavior."
+          "current_sha256": "2e1633f3ee6c07d086a857af5450f68e13e33286de52502b08132e3dd3262159",
+          "issue": "DA-012",
+          "reason": "Standard table metadata writers emit canonical booleans and preserve exclusions; strict policy readers and SQL/security guards unchanged. Candidate pending runtime qualification.",
+          "previous_reviewed_change": {
+            "baseline_sha256": "4d19bb20a41087a427fe2319b9254fce17fa640b0eb4d5f50eb921028982410b",
+            "current_sha256": "30f640193be44753292e79feac4b6e9c694fd1812d638a8ceb7390ee9d6c134d",
+            "issue": "DA-011",
+            "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+            "previous_reviewed_change": {
+              "baseline_sha256": "4d19bb20a41087a427fe2319b9254fce17fa640b0eb4d5f50eb921028982410b",
+              "current_sha256": "2585e80b19666aab01f3d4a025145ea602ce8be252c0e5e354c5d74aa6babafa",
+              "issue": "DA-009",
+              "reason": "Scoped OpenAI model defaults/client endpoint compatibility only; original source baseline retained. Source candidate pending independent review; production overlay uses deployed174 and excludes unrelated current-main behavior."
+            }
+          }
         }
       }
     },
     "backend/chart_agent/graph.py": {
       "baseline_sha256": "57f3030d4065897ff695738550b93199cbb592235c5a224d2e94a5dbddfd2574",
-      "current_sha256": "2fff1a9d38c69549e48404e363ac28d4a7a7f7d56546f90c3b471b610f57fd1c",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "512bb8f77f7fd3a26fa163c4c03b8e7a1bbfcb7766ce5f84429a2b4c86aeb593",
+      "issue": "DA-011, DA-CHART-002, DA-CHART-003",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. Id-driven stacked chart: mapping names measure and label columns, chart-type check counts only measures and re-maps once, multi-column names joined into one label. Models and data unchanged. A router END without a response (empty, single-scalar or single-row table) is a direct no-chart response instead of a 500 on graph_data=None.",
       "previous_reviewed_change": {
         "baseline_sha256": "57f3030d4065897ff695738550b93199cbb592235c5a224d2e94a5dbddfd2574",
-        "current_sha256": "f47f2702bce7b6fe345e2a8b771533ccecf26ab0d64393b65cffc2986347b356",
-        "issue": "DA-009",
-        "reason": "Scoped OpenAI model defaults/client endpoint compatibility only; original source baseline retained. Source candidate pending independent review; production overlay uses deployed174 and excludes unrelated current-main behavior."
+        "current_sha256": "6dc3c8652acfabafc0320f42a535ecb2a5e49bd8b8c72ef88458f796a4eb4673",
+        "issue": "DA-011, DA-CHART-002",
+        "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. Id-driven stacked chart: mapping names measure and label columns, chart-type check counts only measures and re-maps once, multi-column names joined into one label. Models and data unchanged.",
+        "previous_reviewed_change": {
+          "baseline_sha256": "57f3030d4065897ff695738550b93199cbb592235c5a224d2e94a5dbddfd2574",
+          "current_sha256": "f47f2702bce7b6fe345e2a8b771533ccecf26ab0d64393b65cffc2986347b356",
+          "issue": "DA-009",
+          "reason": "Scoped OpenAI model defaults/client endpoint compatibility only; original source baseline retained. Source candidate pending independent review; production overlay uses deployed174 and excludes unrelated current-main behavior."
+        }
       }
     },
     "backend/chart_agent/node.py": {
       "baseline_sha256": "9b3170bfcbb76afc5add4db73d7ca97931c3f29f7e68e4fd3f7ac39634e9344b",
-      "current_sha256": "6767b45c2ceec9e2369969e3eefb47f17368b66928ecccd51e1916b1ea9e58c4",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "43b503fb2a49c847c63e7d250fe90aafa868c61b24e7008d6fc304ab1b514fda",
+      "issue": "DA-011, DA-CHART-002",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. Id-driven stacked chart: mapping names measure and label columns, chart-type check counts only measures and re-maps once, multi-column names joined into one label. Models and data unchanged.",
       "previous_reviewed_change": {
         "baseline_sha256": "9b3170bfcbb76afc5add4db73d7ca97931c3f29f7e68e4fd3f7ac39634e9344b",
         "current_sha256": "6863a3d7335f7fedbfe3dfa7603c4a3ddd31c7edaa1823e9ba562d68ab11007a",
@@ -949,9 +973,9 @@
     },
     "backend/chart_agent/utils/graph_mapper.py": {
       "baseline_sha256": "43d3e901cf2cfb0bf6c098d9f7cfc603e402df3ea234edfc98cbbc8d4eba612c",
-      "current_sha256": "cb73b358447ce128bba8c35e410161754a6b6ec54888322191b59fdcf4916d67",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "67c6e641d21663c22bddd0ff28a6d4530ce72fd4ba12238d2d17dc481676c987",
+      "issue": "DA-011, DA-CHART-002",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. Id-driven stacked chart: mapping names measure and label columns, chart-type check counts only measures and re-maps once, multi-column names joined into one label. Models and data unchanged.",
       "previous_reviewed_change": {
         "baseline_sha256": "43d3e901cf2cfb0bf6c098d9f7cfc603e402df3ea234edfc98cbbc8d4eba612c",
         "current_sha256": "9a7ad5e6a44094dae9bd406489030a8d3f88cd37f035f695691f6ffc1e27d3b2",
@@ -997,9 +1021,9 @@
     },
     "backend/agent/nodes/select_table_and_fewshots.py": {
       "baseline_sha256": "a89a523aa2db67d443e97360a989e3f88873ed435735e4a9209d1c6704b5f8f1",
-      "current_sha256": "4ad21305085c6f406d59c3ed8887f3fba07ef278aa4f0f837511e2ebecd3a70f",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending.",
+      "current_sha256": "2259685e8be7628ac02395de2c148b8dd390be569c1c9cd35d3253794298df22",
+      "issue": "DA-011, DA-020",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection.",
       "previous_reviewed_change": {
         "baseline_sha256": "a89a523aa2db67d443e97360a989e3f88873ed435735e4a9209d1c6704b5f8f1",
         "current_sha256": "32723a826006921e5917eefd81d24fe3e879352e787cf7ede3d408a635ca89e0",
@@ -1010,9 +1034,9 @@
     },
     "backend/agent/nodes/graph_agent_bridge.py": {
       "baseline_sha256": "77bda3978bf4d209a2a97ecc7515ba400945c4c12e5ee2765fcff505ac9b781f",
-      "current_sha256": "83a13feab23fe7664e428cc564c88b77e104bfc4fd7d32990a8d1dcff6edda05",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+      "current_sha256": "456e84c16a774cfd20bd61420c4a6428fd3b65eb41d5cb2217be31cf4144184a",
+      "issue": "DA-011, DA-UX-DEMO-001",
+      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending. A follow-up that narrows an answer which drew a chart gives the chart agent the router's resolved chart request (only when the previous answer had a chart and the router kept chart intent); every other turn still passes the user's own words."
     },
     "backend/agent/utils/agent_config_loader.py": {
       "baseline_sha256": "0213fe9c024d76a0a0dfa3e7d314baac9236f931ef348ec83fe6fe78d44d7892",
@@ -1040,9 +1064,21 @@
     },
     "backend/agent/utils/high_cardinality_qdrant_utils.py": {
       "baseline_sha256": "20b5c5efe542410d99bf7baee8dc4dcbb13c35ed2355ad84e4969691baae1f22",
-      "current_sha256": "700f49c782f23e28e1a91d4d7541045bb84a32815dbeda014d0634f6f3a2b814",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+      "current_sha256": "a75db9c62e69e329efc536b2b06b796d9d27879c98d5ba83eebb0b26fa4a8139",
+      "issue": "DA-014, DA-MEM-002",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. The BM25 encoder loads once per process under a lock and encodes in a worker thread; a column is embedded and upserted in chunks of HC_INDEX_CHUNK_SIZE values (default 256) instead of all at once. Retrieval, models and collection schema unchanged.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "20b5c5efe542410d99bf7baee8dc4dcbb13c35ed2355ad84e4969691baae1f22",
+        "current_sha256": "0e393498b748b5c6e705b3a4432c20524012a7499b04718ea0d5e45c3d2c9d85",
+        "issue": "DA-014",
+        "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged.",
+        "previous_reviewed_change": {
+          "baseline_sha256": "20b5c5efe542410d99bf7baee8dc4dcbb13c35ed2355ad84e4969691baae1f22",
+          "current_sha256": "700f49c782f23e28e1a91d4d7541045bb84a32815dbeda014d0634f6f3a2b814",
+          "issue": "DA-011",
+          "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+        }
+      }
     },
     "backend/agent/utils/model_config_loader.py": {
       "baseline_sha256": "8e89f01cdc96a2c25408bc16186889fb34827749f827e2f4cf66c8172f79e45d",
@@ -1052,9 +1088,15 @@
     },
     "backend/agent/utils/qdrant_few_shot_store_utils.py": {
       "baseline_sha256": "bdbed1e78082cdab60f4508d013638f282a40bd4fb7d39947086988695ca26b9",
-      "current_sha256": "c22dec52eda0fa114e2b939b8b5c762e0957b9ea173e6f3f717991e2e46b619a",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+      "current_sha256": "105efc7ffa5d9eb25053fa2782f5aa2c3848e7948878c472f6232d7a3e3592ba",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "bdbed1e78082cdab60f4508d013638f282a40bd4fb7d39947086988695ca26b9",
+        "current_sha256": "c22dec52eda0fa114e2b939b8b5c762e0957b9ea173e6f3f717991e2e46b619a",
+        "issue": "DA-011",
+        "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+      }
     },
     "backend/api/v1/schemas/config.py": {
       "baseline_sha256": "c5bb6642d1f926fcc53fa2e8b58da3066cf5cda8c89ebdc83f0a150787c4ae02",
@@ -1082,9 +1124,15 @@
     },
     "backend/knowledge/utils/qdrant_few_shot_store_utils.py": {
       "baseline_sha256": "f3051f3d24cb734ef46c841701afc320e3cfec92231c127834727a0b5f8629e5",
-      "current_sha256": "7105152210ae10119bd213b4464a2241d8fb234426cee0802f02c8bf6e0cc929",
-      "issue": "DA-011",
-      "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+      "current_sha256": "0f8be424f817f1d00cfd69ec6d9f022f27076e8d9a18541ec9995a42121812cd",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "f3051f3d24cb734ef46c841701afc320e3cfec92231c127834727a0b5f8629e5",
+        "current_sha256": "7105152210ae10119bd213b4464a2241d8fb234426cee0802f02c8bf6e0cc929",
+        "issue": "DA-011",
+        "reason": "Central versioned model resolution, explicit capability/configuration errors and non-destructive embedding compatibility; prompts and security guards preserved. Runtime acceptance pending."
+      }
     },
     "backend/pandas_agent/utils/model_config_loader.py": {
       "baseline_sha256": "8e89f01cdc96a2c25408bc16186889fb34827749f827e2f4cf66c8172f79e45d",
@@ -1100,9 +1148,15 @@
     },
     "backend/api/v1/routers/chat.py": {
       "baseline_sha256": "2649938a3a23278b9a3ad952853436987b27e2918787af6b813b272059a47d78",
-      "current_sha256": "c505fdf62dd8af040a340cb513642016656026606469ac50b067c88642582dd2",
-      "issue": "DA-011 / DA-MCP-001, DA-MCP-002",
-      "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending. DA-MCP-001: session-agent scope check before history/model. DA-MCP-002: Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "current_sha256": "1d1287088586b8c69949be9124b7cb15214aaa3c2a1964b11a60a98de47954b8",
+      "issue": "DA-014, DA-FREE-DEMO-001, DA-FREE-DEMO-002, DA-018, DA-020",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. Free sample-data demo: demo-agent questions are charged to the asking user's free allowance and a monthly budget instead of the owner's cap, and non-owners may only ask questions on a demo agent. Ordinary agents, models, SQL generation and security guards unchanged. Demo questions and the allowance endpoint pass the caller's audience (internal when the session's verified email is on an internal domain). Ordinary agents, models and SQL generation unchanged. DA-018: Saved conversations stay on their agent and under its answer settings: chat history and saved replay read only the requesting agent's turns, a session created on another agent is refused (404) before the allowance, history or model, an agent key exports only its own agent's turns, and feedback reaches only the agent's own turns; saved replay and CSV export apply show_sql_query / show_db_result as live chat does. Prompts, models, SQL generation and security guards unchanged. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "2649938a3a23278b9a3ad952853436987b27e2918787af6b813b272059a47d78",
+        "current_sha256": "754fbc5e7afe30b250cd4926850d6ccff55d80537bd6357d6fef563f77585c0d",
+        "issue": "DA-011",
+        "reason": "Central versioned model configuration and explicit nonsecret configuration error response; existing prompts and SQL/security policy semantics preserved. Runtime acceptance pending."
+      }
     },
     "backend/api/v1/utils/tables_helper.py": {
       "baseline_sha256": "7d02daefc0bd22fe516fdfbfd26d034c3b55c05655fcb1fd4bd9a42029d1d09b",
@@ -1112,9 +1166,15 @@
     },
     "backend/knowledge/db_utils/table_description_db_utils.py": {
       "baseline_sha256": "42df61a53efa70140bdeac668f54bdd9c3a62193edc16b52aded006b4145d667",
-      "current_sha256": "a5a2bc4a589d1c67e908328cf09f1adb638f47cfd6c257cd947790973a9234bf",
-      "issue": "DA-012",
-      "reason": "Standard table metadata writers emit canonical booleans and preserve exclusions; strict policy readers and SQL/security guards unchanged. Candidate pending runtime qualification."
+      "current_sha256": "1c5cace63f2dbdcf48c1031d9b023a919b35a35a756f23d28d11e5860bac6013",
+      "issue": "DA-012, DA-DESC-RACE-001, DA-MEM-002",
+      "reason": "Standard table metadata writers emit canonical booleans and preserve exclusions; strict policy readers and SQL/security guards unchanged. Candidate pending runtime qualification. Adds merge_generated_descriptions and save_generated_table_descriptions (SELECT ... FOR UPDATE merge). Existing functions unchanged. get_unique_values_for_columns takes an optional limit for sample reads; existing callers unchanged.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "42df61a53efa70140bdeac668f54bdd9c3a62193edc16b52aded006b4145d667",
+        "current_sha256": "b0d52d69d54bb6e6f77e35a56934085610b23cc02fa3b09a27764d15e2bf6bdc",
+        "issue": "DA-012, DA-DESC-RACE-001",
+        "reason": "Standard table metadata writers emit canonical booleans and preserve exclusions; strict policy readers and SQL/security guards unchanged. Candidate pending runtime qualification. Adds merge_generated_descriptions and save_generated_table_descriptions (SELECT ... FOR UPDATE merge). Existing functions unchanged."
+      }
     },
     "backend/api/v1/utils/agent_templates.py": {
       "baseline_sha256": "71fb87b7dd9d19552b7db88534878db99ed18b2878032f2c9cf6c3cb225a3675",
@@ -1122,29 +1182,359 @@
       "issue": "DA-013",
       "reason": "Independently accepted prompt-only business template inheritance of the central model profile; template instructions and SQL/security guards preserved. Fresh runtime acceptance pending."
     },
+    "backend/agent/utils/owner_credential_utils.py": {
+      "baseline_sha256": "4ed7ff872e2a0b16476f8c4509e30838f10b1e7e6a5da52a17b21af015e0f18b",
+      "current_sha256": "80d46f35c7ca3e9346f931456cb1e91231285b9bf872d6cf5bee2624a785dc3f",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/api/v1/routers/databases_hc.py": {
+      "baseline_sha256": "134ed664ead0e224e03877f6d94d6aa2fe8f295df5332fc2f868a6ddd2daca81",
+      "current_sha256": "bd29d320db0930e955924b87246a5acde25d44a92cba14ff39a090dd25596ccb",
+      "issue": "DA-014, DA-MEM-002",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. Manual HC column registration reads and embeds values inside the same heavy_work gate, with the DISTINCT read in a worker thread.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "134ed664ead0e224e03877f6d94d6aa2fe8f295df5332fc2f868a6ddd2daca81",
+        "current_sha256": "0cadb4f5abacc5f7a1808e4f0e28a6c6701225c3c4b23e914bb1da86fbedd684",
+        "issue": "DA-014",
+        "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+      }
+    },
+    "backend/api/v1/routers/databases_tables.py": {
+      "baseline_sha256": "169eb8c2ed20e12b5cb46a493cf37dd5b0ef2deb3830473c6af3b91bd882aefb",
+      "current_sha256": "8c85f49a99738f545b2ad4351b478997a0b7f3b4c8c739e1e43088a0e60ac48f",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/api/v1/routers/hc_profile.py": {
+      "baseline_sha256": "5179967ac0a425c2d1254394b335022d2cbf8902141c715b13cf6d497db25bc9",
+      "current_sha256": "624e03f48c28fcd7f6e98caa2ff5d0b7a81320c8ab20fab6287c7076b1c61ede",
+      "issue": "DA-014, DA-MEM-002",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. Profiling and HC value indexing run inside the process-wide heavy_work gate (one database-setup section at a time, queued in arrival order, never dropped) and the DISTINCT read runs in a worker thread, so two databases added at once no longer exceed the 1 GB task.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "5179967ac0a425c2d1254394b335022d2cbf8902141c715b13cf6d497db25bc9",
+        "current_sha256": "b874312d627bd70093bca1d5b91bdca81781ea0d0f7f02e349d0f03e277b06b1",
+        "issue": "DA-014",
+        "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+      }
+    },
+    "backend/api/v1/routers/owner_config.py": {
+      "baseline_sha256": "161fdfebdf3567cd36e227456441da00118416c1c28ec426d7640f4c5c337084",
+      "current_sha256": "c2f674e36e567ef93c419f31b1b345b2621a6326d0d629128ee39702d8492234",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source and explicit credential errors; browser sessions may manage only their own credentials and owner settings (master-key service callers unchanged). Prompts, models and SQL/security guards unchanged.",
+      "previous_reviewed_change": {
+        "baseline_sha256": "161fdfebdf3567cd36e227456441da00118416c1c28ec426d7640f4c5c337084",
+        "current_sha256": "1b8b98d153f30bd307a8439a12f7707b07d9612b1f2b4cb4b45c7e27f1a9c133",
+        "issue": "DA-014",
+        "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+      }
+    },
+    "backend/api/v1/schemas/owner_config.py": {
+      "baseline_sha256": "b6b2623eb62afbe6f0db69cb0ac2a11465009949b82ce37c40c281f52fbbbd5f",
+      "current_sha256": "feee317f67fda1057685cadd71b5b53396856075612670df124c7525ee10f582",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/api/v1/utils/feedback_helper.py": {
+      "baseline_sha256": "307272276f3ff5242d2277db6e0ee5e62ee33861951f22c45b20459ded10f349",
+      "current_sha256": "3991c8362838d9d17dfdc163b4f110b5617aa149bf356147344c01975708e24e",
+      "issue": "DA-014, DA-FREE-DEMO-002, DA-018",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged. On a shared demo agent a visitor's feedback is accepted only on their own answer, records the verdict only (no SQL is written over the stored query) and never adds a few-shot example. Feedback on ordinary agents unchanged. DA-018: Feedback is recorded only on a turn of the agent in the path, so a caller allowed to use one agent cannot rewrite another agent's stored verdict or SQL."
+    },
+    "backend/batch_query_reports/executor.py": {
+      "baseline_sha256": "ac5e83384777fa899e0ff53120e97d5887d09fd3abf7a626aa5a74dc5dd797c5",
+      "current_sha256": "0f360d88a7f812710c142dcb5d889689120fd2439491df3b56183affa6aea7d1",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/chatbot_management/db_utils/owner_config_db_utils.py": {
+      "baseline_sha256": "d8dc1595c224a05f1ad02c2b837fa518333c7aef0324670672b74e046264d96a",
+      "current_sha256": "0ef405e5f14ef776118c7a9fb5e24ecfe9aa4c392b322658bb40138d827af8f6",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/chatbot_management/utils/owner_defaults.py": {
+      "baseline_sha256": "eb76bdecbea8a7c1647af56786ba25e23263b1010c38df5b9d2b0082a97e7cf6",
+      "current_sha256": "a9d14dc62d851eacefa4c9886324341f90a975e5032f1e49e0f2e612986b6ddf",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/models/sql_models.py": {
+      "baseline_sha256": "e7530a86916624fa7a26fa72714295e15ec922144008753fb804d03aea88e164",
+      "current_sha256": "657bbaa1df61264916dc8c6c8dc561b8cb1806de88f0bb5f5531cc48e114318c",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source; owner keys bound for chat, setup, profiling, few-shot and report paths; missing/invalid owner keys raise explicit credential errors instead of platform fallback. Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/api/v1/routers/credentials.py": {
+      "baseline_sha256": "49db9585f148194426fc7006b075a13d7fc8e049d19bad253b002013023dd22d",
+      "current_sha256": "8ba0d53ceedb56489eb229621a46995269eb2b3c31ac4bd68588688f3e2b275c",
+      "issue": "DA-014",
+      "reason": "Hosted bring-your-own-key: per-owner provider key source and explicit credential errors; browser sessions may manage only their own credentials and owner settings (master-key service callers unchanged). Prompts, models and SQL/security guards unchanged."
+    },
+    "backend/agent/db_utils/session_db_utils.py": {
+      "baseline_sha256": "c69ce9026dbaa9a055ded95abc5452e68fc652df38d91ed97e3a22c9bde978e8",
+      "current_sha256": "fb38292a35bb1b864d2b8648b1b86a6b247a58b5c0a715bcb98cf5527cef9441",
+      "issue": "DA-ANSWERABILITY-001",
+      "reason": "First-query false refusal: no business template by default, refused turns not replayed as history, refusal reason logged. Models, SQL execution and security guards unchanged."
+    },
+    "backend/api/v1/schemas/agents.py": {
+      "baseline_sha256": "d1064fab6a58ece13292ed27d9e46570db067e924e8900f38d7187f3852ab528",
+      "current_sha256": "127a578b733acf0443fbbd609b079f801a260ece85899348f6229f6bc1832674",
+      "issue": "DA-ANSWERABILITY-001",
+      "reason": "First-query false refusal: no business template by default, refused turns not replayed as history, refusal reason logged. Models, SQL execution and security guards unchanged."
+    },
     "backend/api/v1/utils/chat_helper.py": {
       "baseline_sha256": "a19c1b056d58c9cf570b77eb5d6ff7e6e845a01648056636ba2b8f6f20d66385",
-      "current_sha256": "ea1c447f054c6b3ff25d5f47835ad3a3373be821bee84c75b87825cc95a6f4dd",
-      "issue": "DA-MCP-001, DA-MCP-002",
-      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "current_sha256": "11488962e032cb982ff9d0a79462f1fc4acc13146e9f5e567d651b27ad52c2b2",
+      "issue": "DA-ANSWERABILITY-001, DA-018, DA-020, DA-021",
+      "reason": "First-query false refusal: no business template by default, refused turns not replayed as history, refusal reason logged. Models, SQL execution and security guards unchanged. DA-018: Saved conversations stay on their agent and under its answer settings: chat history and saved replay read only the requesting agent's turns, a session created on another agent is refused (404) before the allowance, history or model, an agent key exports only its own agent's turns, and feedback reaches only the agent's own turns; saved replay and CSV export apply show_sql_query / show_db_result as live chat does. Prompts, models, SQL generation and security guards unchanged. DA-020: Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval. DA-021: Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
     },
-    "backend/session/db_utils/session_db_utils.py": {
-      "baseline_sha256": "18e03d5966a451f0b1bc6d5777e2254effc1c1ad248f033d0067c7d7faf64d11",
-      "current_sha256": "f8432c65a862153d033a5003b3afbed4a0a1848c813b3716a9322f5b72625be4",
-      "issue": "DA-MCP-001, DA-MCP-002",
-      "reason": "Session continuation is scoped to the agent that created the session (cross-agent history replay closed), and saved-conversation replay additively serves the stored column-labelled result block; required by the MCP adapter. No prompt, model, SQL generation or execution change. DA-MCP-002: Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+    "backend/chart_agent/utils/graph_assembler.py": {
+      "baseline_sha256": "11a3fa584566860712ed65d207d7817a382df5c4bf6271e6ba6312511e453c4a",
+      "current_sha256": "0cf83a951c0ebf36a6b420b6dc5c970d5a994d225134030d7f184aa90862edff",
+      "issue": "DA-CHART-002",
+      "reason": "Id-driven stacked chart: mapping names measure and label columns, chart-type check counts only measures and re-maps once, multi-column names joined into one label. Models and data unchanged."
+    },
+    "backend/agent/db_utils/table_description_db_utils.py": {
+      "baseline_sha256": "06927315ebb7b4657d37b201bdf8c7a11453a828a7fcc17d485430f3ef6573bd",
+      "current_sha256": "6c403a3cfffca8129936c2191227e2aad6820d04aa11da498764aaa7ba1095c9",
+      "issue": "DA-PROFILE-PORT-001",
+      "reason": "Source connections use the stored port: table listing, column listing, description upload and the HC profiler connected to the engine default port. Queries, models and security guards unchanged."
+    },
+    "backend/database_connection/db_utils/table_description_db_utils.py": {
+      "baseline_sha256": "cd843d60a7a6d3f599085fdfe5eab15ed1a2ad945e0f1a592d56e7d6752a6881",
+      "current_sha256": "f2fb24d68750971732a10cd8d607f73335e2447d187ad4c265728bf5c3fb1be4",
+      "issue": "DA-PROFILE-PORT-001",
+      "reason": "Source connections use the stored port: table listing, column listing, description upload and the HC profiler connected to the engine default port. Queries, models and security guards unchanged."
+    },
+    "backend/knowledge/db_utils/database_db_utils.py": {
+      "baseline_sha256": "4cda55d94a1ae29bb3289cdb171a98e152b10ede76a2acc4f1fd23610132af70",
+      "current_sha256": "5b05a750c76f1e854b5b8e62bcab7ce4d8f225003f5420edc194a40e31006ab4",
+      "issue": "DA-PROFILE-PORT-001",
+      "reason": "Source connections use the stored port: table listing, column listing, description upload and the HC profiler connected to the engine default port. Queries, models and security guards unchanged."
+    },
+    "backend/agent/utils/authorization.py": {
+      "baseline_sha256": "41b94a53aee8401f67f674f07d70fd8935ef9089d7b43ac750a1678fc0f53233",
+      "current_sha256": "d80b22c679bc3ad56b037cf4fdc2e6e9104bc950bccd661557a5e444ed708cbd",
+      "issue": "DA-FREE-DEMO-001",
+      "reason": "Free sample-data demo: demo-agent questions are charged to the asking user's free allowance and a monthly budget instead of the owner's cap, and non-owners may only ask questions on a demo agent. Ordinary agents, models, SQL generation and security guards unchanged."
+    },
+    "backend/agent/utils/prompts.py": {
+      "baseline_sha256": "c36e75c6c80092771987d6e48a2732aeff0649f900436b95f13117232d8245ae",
+      "current_sha256": "a495de6751b448a7274b6fb28ddd549df6218a00719b1dae58a474d462ee337d",
+      "issue": "DA-UX-DEMO-001",
+      "reason": "Router: a follow-up that only narrows a charted result keeps the chart (history and charts enabled only). Answer prompt: table definitions placeholder and currency rule. Other prompts unchanged."
+    },
+    "backend/api/v1/routers/feedback.py": {
+      "baseline_sha256": "091f8934b8030deb5fb0b910c3b80e57c633fdaf3251eb00fb8dcb49134dd8bb",
+      "current_sha256": "045bbd45855366575ef1b361fa0daa43574eb2a2e30daa6c19d5b2907de6e463",
+      "issue": "DA-FREE-DEMO-002",
+      "reason": "Answer problem reports: POST /agents/{id}/reports (the asker only, conversation snapshot attached server-side), GET and PATCH /answer-reports for the master key. Existing feedback route unchanged apart from passing the caller."
+    },
+    "backend/api/v1/utils/databases_helper.py": {
+      "baseline_sha256": "0bc5fcb659df0c502558992112f4b0d2474088e6a72213caf8b60d07fbb1b199",
+      "current_sha256": "a1e5d5faea2b0c0cb294d488d1a8ac38c16729e707141d3273343578a5962191",
+      "issue": "DA-UX-DEMO-001",
+      "reason": "The databases listing reports included_table_count from each database's visibility flags (null when there is no valid flag map), so the dashboard header stops showing 0 tables."
     },
     "backend/api/v1/routers/sessions.py": {
       "baseline_sha256": "77f78284e95e36bec167d39cbe89ed8f8969ce958425882905360f1650f7e638",
       "current_sha256": "dc345228a30bd8d3fd539c7e2b90c1e7c7b0688306c46f446b6a9346bec638cf",
-      "issue": "DA-MCP-002",
-      "reason": "Chat history and saved replay read only the requesting agent's turns (a session created on another agent is still refused with 404) and an agent key exports only its own agent's turns. Saved conversations apply the agent's answer settings at the API: replay (session detail and messages) leaves out the SQL and rows that show_sql_query / show_db_result hide, including the column-labelled result block, and CSV export returns 403 for an agent that hides rows. Prompts, models, SQL generation and security guards unchanged."
+      "issue": "DA-018",
+      "reason": "Saved conversations stay on their agent and under its answer settings: chat history and saved replay read only the requesting agent's turns, a session created on another agent is refused (404) before the allowance, history or model, an agent key exports only its own agent's turns, and feedback reaches only the agent's own turns; saved replay and CSV export apply show_sql_query / show_db_result as live chat does. Prompts, models, SQL generation and security guards unchanged."
     },
-    "backend/api/v1/utils/feedback_helper.py": {
-      "baseline_sha256": "307272276f3ff5242d2277db6e0ee5e62ee33861951f22c45b20459ded10f349",
-      "current_sha256": "ef4bdadb07b2cc06a95543ec9e3d86ab00ca17a0ad5d15f9974599278639712c",
-      "issue": "DA-MCP-002",
-      "reason": "Feedback is recorded only on a turn of the agent in the path, so a caller allowed to use one agent cannot rewrite another agent's stored verdict or SQL."
+    "backend/session/db_utils/session_db_utils.py": {
+      "baseline_sha256": "18e03d5966a451f0b1bc6d5777e2254effc1c1ad248f033d0067c7d7faf64d11",
+      "current_sha256": "f8432c65a862153d033a5003b3afbed4a0a1848c813b3716a9322f5b72625be4",
+      "issue": "DA-018, DA-021",
+      "reason": "Saved conversations stay on their agent and under its answer settings: chat history and saved replay read only the requesting agent's turns, a session created on another agent is refused (404) before the allowance, history or model, an agent key exports only its own agent's turns, and feedback reaches only the agent's own turns; saved replay and CSV export apply show_sql_query / show_db_result as live chat does. Prompts, models, SQL generation and security guards unchanged. DA-021: Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "backend/swaggers/nl2sql.py": {
+      "baseline_sha256": "31681c2704b5fabf97943d2378e337a0e161c529013d608151c25467806b366e",
+      "current_sha256": "408031adbf0fd06de750b9baa056dc0a68ffb5e961347145d25ce19be8c6dcc1",
+      "issue": "DA-019",
+      "reason": "API docs work at the canonical public root https://futuresmart.ai/database-agent/api: the docs page loads the schema by a relative URL and the schema's server is PUBLIC_API_ROOT when set"
+    },
+    "backend/chart_agent/api/chart_api.py": {
+      "baseline_sha256": "cd89f7005f154d1f1e8ed13538ba93c9619b87bfbef2f75a1a81b75146a094d5",
+      "current_sha256": "5a9924f385f0dce361ea2a4c187b843963579e219312dda8892e79c6d6a2b2e1",
+      "issue": "DA-CHART-004",
+      "reason": "Trusted internal caller: a request carrying CHART_SERVICE_KEY runs on the platform key scope for the owner it sends (Document Intelligence applies its own key policy); a wrong key is refused; requests without the header are unchanged."
+    },
+    "backend/agent/utils/agent_health_service.py": {
+      "baseline_sha256": "74a0bfdfddd0af0202a4921d33e94d5095ab4cff5e99a84b429e6bd1abbaf2dc",
+      "current_sha256": "5f46a2221e05587d6af3b1894dee307a014db37d56de9e709ea2378796f3ea12",
+      "issue": "DA-020",
+      "reason": "Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection. DA-020: the health event's token totals come from the run-level count of every model call, so they equal the chat API usage block."
+    },
+    "backend/agent/utils/node_metrics.py": {
+      "baseline_sha256": "8b80d3eeef92e185776a03e8e20b6ed689019f960e02a4c7e64aae50ef98f8c5",
+      "current_sha256": "887409d5a81714439a82b040cd322d14321e85760d7ea54f21a11733062f3dfa",
+      "issue": "DA-020",
+      "reason": "Per-answer usage block (latency, tokens, list-price cost estimate per node) returned by the chat API and stored per node in the health event; cached-input tokens recorded per node so cached prompts are priced at the cached rate (DA-COST-001); enables the model evaluation in tests/evaluation/model_eval. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection."
+    },
+    "frontend/src/components/conversations/FullLogs.tsx": {
+      "baseline_sha256": "65faffebbb4d710a07d3a9df44dc305dabb49def65e59f468a1e8188466314ef",
+      "current_sha256": "9dbb6a2fd9147cd899e442c5d12dd14b71c8ceb61c939b958383e825b8a63898",
+      "issue": "DA-020",
+      "reason": "Run log shows the live answer's NL2SQL usage block: agent latency, tokens, per-step model/tokens/time and the list-price cost estimate marked as an estimate (withheld when a model is unpriced); stored turns unchanged."
+    },
+    "frontend/src/components/conversations/__tests__/runLog.test.ts": {
+      "baseline_sha256": "b621cd779603c1ee672b7223d09fbece1d2976c4e8bdc34880b85c729ff5bfd6",
+      "current_sha256": "9b9110bec2ce39c644df77e65774c8d5b842920aa52ef2695ce9e01f790b31ff",
+      "issue": "DA-020",
+      "reason": "Run log shows the live answer's NL2SQL usage block: agent latency, tokens, per-step model/tokens/time and the list-price cost estimate marked as an estimate (withheld when a model is unpriced); stored turns unchanged. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection."
+    },
+    "frontend/src/components/conversations/runLog.ts": {
+      "baseline_sha256": "10786fff3216b10543a3219100cf1059399d771c0dba4511d5cc7f17370fad0c",
+      "current_sha256": "1ae65da88b12e1fede98a2b0cd0d8696bebd1b29eca0084dc154e87d8b89de62",
+      "issue": "DA-020",
+      "reason": "Run log shows the live answer's NL2SQL usage block: agent latency, tokens, per-step model/tokens/time and the list-price cost estimate marked as an estimate (withheld when a model is unpriced); stored turns unchanged. DA-020: every chat-model call of a run is counted per model (run-level callback) so the answer's tokens and estimated cost include calls no node records (other_calls); table selection is recorded as its own node by a measurement helper that cannot change selection."
+    },
+    "frontend/src/platform/chat-core/streaming/types.ts": {
+      "baseline_sha256": "927a7baa487ed46c95f6c5e892e3de23e3d103c5012a7b51072d29cbe3a7d518",
+      "current_sha256": "acc0d156da5c0b29d1a426a4775084c574123e28b2ab5580f1cebb7d6ea6cb33",
+      "issue": "DA-020",
+      "reason": "Run log shows the live answer's NL2SQL usage block: agent latency, tokens, per-step model/tokens/time and the list-price cost estimate marked as an estimate (withheld when a model is unpriced); stored turns unchanged."
+    },
+    "frontend/src/platform/chat-core/types/message.ts": {
+      "baseline_sha256": "bf4bf1a652d3cee86dfd24b5eaff7027afbabbbb59fa1a40a4b0a88ff139dd1e",
+      "current_sha256": "efc773f493ea9cfcd30fb95da244263ef4c76a4c0983a21ac05903fb1725769f",
+      "issue": "DA-020",
+      "reason": "Run log shows the live answer's NL2SQL usage block: agent latency, tokens, per-step model/tokens/time and the list-price cost estimate marked as an estimate (withheld when a model is unpriced); stored turns unchanged."
+    },
+    "frontend/src/platform/hooks/useChatStream.tsx": {
+      "baseline_sha256": "a945c32986c815898d0561a7066cc07e5046b05893c4307dac41beaf5b33c28c",
+      "current_sha256": "b21804fc416e6d5e6a26209a8c2356044cd03ebc5e283aeedcad2f9e44bbabfe",
+      "issue": "DA-020",
+      "reason": "Run log shows the live answer's NL2SQL usage block: agent latency, tokens, per-step model/tokens/time and the list-price cost estimate marked as an estimate (withheld when a model is unpriced); stored turns unchanged."
+    },
+    "frontend/src/app/layout.tsx": {
+      "baseline_sha256": "a1634678b9a924c74943812b401340ecef2ee259bbdf3b507fb48590faffc438",
+      "current_sha256": "ca87339b0717a377fd1da31c0f62f3722dd39d456328de55d8f5082afc4a3725",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/ChatEmptyState.tsx": {
+      "baseline_sha256": "8013946649137d58423435a9bcebedcf9fc35fc181e5b15d5ff16acdac241438",
+      "current_sha256": "4c362b6c1755cc2b2cd46b3fdd68880899e5623896c156501e823f7faf1e7893",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/Composer.tsx": {
+      "baseline_sha256": "b353d8c7f1540cdd08d1781a2dc526d76d11758da9515daed46e3ff6ffc668a2",
+      "current_sha256": "87aa24ca28f29d245d8b781f183b6c8df53f08c896d8842c9d292866ae9e7a11",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/FollowUps.tsx": {
+      "baseline_sha256": "75c7e6c43d210cfa58d2aa0c79190827ff7a2ba062101551318c487d510af0ef",
+      "current_sha256": "bab7a94dca698461fee1c1ea12932a681ab83dcdb221911900a71dbeb9d371b5",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/Nl2sqlChatView.tsx": {
+      "baseline_sha256": "d45cac2782d38eccfac1a203878006408055f5dcaa40b15a6ac8bff23a0431bc",
+      "current_sha256": "18771da3ba34e027bb7d460f0c4e50bf0050a640221834b9ecd4602b42127ced",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/Nl2sqlSessionThread.tsx": {
+      "baseline_sha256": "461df514b1c33f49e6f6cba717cbfe34663bb5f5947c0a5b3708fa2679522d72",
+      "current_sha256": "55d5a9be6b8e9aff1b13d6f959021f21be8ce2c56f0dd408d9ae16808a350fab",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/Thread.tsx": {
+      "baseline_sha256": "b69e96dcf2a92982cfd1670738588236d10b764a9c3b720702e77a253fbd4914",
+      "current_sha256": "fff82dd308fd6ca06a7e9814b6f033307c1604a81aef108690aa8170b3ead0a6",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/conversations/TurnBlock.tsx": {
+      "baseline_sha256": "95151cb0c3a9808bbc84d378f324f888901f3698041e1600dc1ee404345bfb7e",
+      "current_sha256": "fd73e374da6d12510e0c6f40ee321c06862b0e07c6d4578da865836087a300e8",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/home/HomeView.tsx": {
+      "baseline_sha256": "34898222e68e9bcaf46fc7acca8f4b7e13ac1ecc8e395a61e981357c532ba4bc",
+      "current_sha256": "8bfe77182125fe0b0e8dba62377d72067c121b875a445b70cc43957796669e74",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/home/__tests__/HomeCredentialsEntry.test.tsx": {
+      "baseline_sha256": "2b6d80fa20150c1c86d53f5c94493fba8d595d50fee6b05935fa5333406d853e",
+      "current_sha256": "2bd24b27a3bfdc9204ab6a1142be71cc27885c84d792109e8a22c201ebeee02f",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/home/__tests__/HomeDemoAgent.test.tsx": {
+      "baseline_sha256": "d0086707e0861713e41ba969c3ca395b19c2e6cc35c6690b9a9641504674adee",
+      "current_sha256": "fa75122d2878f7e71e48f336e61650847253bc7cea456ec306d40094e9f475a3",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/share/ShareView.tsx": {
+      "baseline_sha256": "5db1e0b04b1545c9d0cc097a952d90c92ff8fb92ff7f4d0318adfa6f16eb052b",
+      "current_sha256": "2edafe26dac7fb5be2403a4a37441f7a7bc1ac24c70975da3148a5c4849cbf6b",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/components/shell/AppShell.tsx": {
+      "baseline_sha256": "b6735bf9efdb0bf8d649df3e71ddf78f456fde12641261769faff4e4caf0186b",
+      "current_sha256": "de57d97e8b3433926d474620b25ad09012c78cdd99ceabfea530690795a79fc2",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/data/agents.ts": {
+      "baseline_sha256": "aa638d5879f2df62182ff70d555f382b5962b5a0865793b6378d35600f13abdd",
+      "current_sha256": "c1d4fed9bec1921aee6f3ebc569c0f85929a35ecb98cdc51575f608dcd997865",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/data/api.ts": {
+      "baseline_sha256": "281407294a6977a032329eb12d0e6c0bdf0fc4d16caa014edfc6ad310bc73e50",
+      "current_sha256": "366d76370c3793b93877c5a90ddd6292065d25d0afbd9f64dfcbd407c0835431",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/data/conversations.ts": {
+      "baseline_sha256": "d2d21c518cca7480d0daa258673f588a033b51442d214f81930210bce6cb13d2",
+      "current_sha256": "e8d441165524f58ce10ffdcd5c6e9b11d302ee3184b184efd86242d61b85d702",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/data/databases.ts": {
+      "baseline_sha256": "0887daae9993a8b3a00d5adae1097d905eb7b0900ed5c859243b84908054763e",
+      "current_sha256": "eb66dd5ade157554485b3a09205987b2887427fd818c231bcd271f1f93fd044f",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/data/types.ts": {
+      "baseline_sha256": "dcfa7299dd5044384530ed8a28ded59fc86e3688d29af62c8c4280c13e42ff59",
+      "current_sha256": "c6d1767bdc4baa124d364c087ac8a3678c2265d52fd5a895982249461671c9d5",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/lib/apiError.ts": {
+      "baseline_sha256": "658989a3b181ea367b064f44902f40c62997683cef35262f92d7889021081003",
+      "current_sha256": "e3259990142e7875097eae16e02b5949b127858cee7fa74c92bfc978b06b914f",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/lib/routes.ts": {
+      "baseline_sha256": "da7823e723c8289f5a1b692f43f7289fa54dfdd8e568b349206bad5028651190",
+      "current_sha256": "ece5f2205c72a5300f66dc8ed4dcfe10aca3900fb87089532beaa7b0c0446751",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
+    },
+    "frontend/src/platform/chat-core/streaming/stream.ts": {
+      "baseline_sha256": "a9a30310d4f977ebc63dccab24256fd52c91540e00e68aae00c001de7a9cc1c2",
+      "current_sha256": "7b2981f85b2d30be2308fa56a94b888ad51b2af27dd83f4d20d27cfa2288098a",
+      "issue": "DA-021",
+      "reason": "Single development repository: the hosted UI changes made in the retired database-agent-ui repository (sample-data entry, free-question allowance, report a problem, canonical API root) and the public repository's MCP replay result block are brought here; behaviour matches what each source served"
     }
   }
 }

@@ -174,6 +174,53 @@ def enforce_role_path_rules(role: str, path: str, user_email: str, agent_id: str
             )
 
 
+# What a signed-in user who does not own a demo agent may reach on it: the "use" routes
+# (chat, their own sessions and messages, feedback, the agent and its schema) except these,
+# which report on everyone's questions or touch the database connection.
+_DEMO_VISITOR_DENIED = ("/analytics/", "/statistics", "/databases/check")
+
+
+def demo_visitor_allowed(permission: str, path: str, method: str = "GET") -> bool:
+    """Whether a non-owner may call this route on a demo agent. Pure, for tests."""
+    if permission == "read" and method == "GET" and path.rstrip("/").endswith("/config"):
+        # The answer settings and suggested questions the chat screen reads; no secrets.
+        return True
+    return permission == "use" and not any(part in path for part in _DEMO_VISITOR_DENIED)
+
+
+async def enforce_demo_visitor_limits(agent_id: str, user_email: str, permission: str,
+                                      path: str, method: str = "GET") -> None:
+    """403 when a signed-in non-owner tries to change or inspect a demo agent.
+
+    Not role-based access control: ordinary agents are untouched (see the module
+    docstring). A demo agent is shared with every signed-in user and paid for by
+    FutureSmart, so its configuration, database connection, keys, collaborators and
+    cross-user analytics stay with the owner. Fails closed if the agent cannot be read.
+    """
+    from sqlmodel import select
+    from chatbot_management.services.sqlmodel_session import async_session
+    from models.sql_models import ChatbotDetails
+
+    async with async_session() as session:
+        row = (await session.execute(
+            select(ChatbotDetails.is_demo, ChatbotDetails.owner_id).where(
+                ChatbotDetails.agent_id == agent_id)
+        )).first()
+    if not row or not row[0]:
+        return
+    if (row[1] or "").lower() == (user_email or "").lower():
+        return
+    if demo_visitor_allowed(permission, path, method):
+        return
+    logger.warning(f"[demo] refused for visitor: user={user_email} agent_id={agent_id} "
+                   f"permission={permission} path={path}")
+    raise HTTPException(
+        status_code=403,
+        detail="This is a shared sample-data agent. You can ask it questions, but only its "
+               "owner can change it.",
+    )
+
+
 def require_agent_permission(permission: str) -> Callable[..., Any]:
     """
     Authentication dependency. **Does not authorize session callers** — see the module docstring.
@@ -239,6 +286,11 @@ def require_agent_permission(permission: str) -> Callable[..., Any]:
 
         mapped_permission = map_permission(permission)
         path = request.url.path
+
+        # The one exception to "a login is enough": a demo agent is listed for every signed-in
+        # user and runs on the platform key, so anyone but its owner may only ask questions.
+        await enforce_demo_visitor_limits(agent_id, user_email, mapped_permission, path,
+                                          request.method)
 
         # AUTHORIZATION IS DISABLED FOR SESSION CALLERS — see the module docstring.
         # A valid login is all that is required; the agent is not checked against the caller.

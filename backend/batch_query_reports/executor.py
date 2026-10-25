@@ -97,7 +97,11 @@ async def execute_run_task(run_id: str) -> None:
 
         analysis_prompt = definition.get("analysis_prompt")
         if analysis_prompt and transcript:
-            summary: Optional[str] = await analysis.run_analysis(analysis_prompt, transcript)
+            # The summary model is paid for by the report agent owner's key policy.
+            from agent.utils.provider_key_scope import owner_key_scope
+            from chatbot_management.db_utils.bot_crud_db_utils import get_owner_email_by_agent_id
+            async with owner_key_scope(await get_owner_email_by_agent_id(definition.get("agent_id"))):
+                summary: Optional[str] = await analysis.run_analysis(analysis_prompt, transcript)
             if summary:
                 await db_utils.set_run_analysis(run_id, summary)
             else:

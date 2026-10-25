@@ -127,6 +127,10 @@ def get_router_prompt(supported_graphs, additional_instruction: Optional[str] = 
         - **Named-segment reference:** If the user points at a **named segment from the assistant's last answer** (e.g. a row label like "Other" from an aggregated table that is not a physical DB category column), add one short clarifying phrase so SQL generation knows it is that segment from the **same breakdown as before**—without pasting SQL.
         - **Implicit context inheritance:** When the current query is a continuation or drill-down on the prior exchange and the user has not introduced a new scope, carry forward ALL active filters and constraints from the previous user query (time ranges, entity names, status values, categories, etc.). Omission of a filter in a follow-up means "same as before" — do NOT silently drop it.
         """
+        if supported_graphs:
+            system_role += """
+        - **Chart inheritance:** If the previous user query asked for a chart/graph/plot and the current query only adjusts that same result (fewer or more rows, a filter, a different sort, period or grouping) without asking for a table, a number or a text answer, the user still wants the chart: set `visualization_query` to the same kind of chart for the refined question (e.g. previous "bar chart of the top five customers by spend", current "only the top two" → "bar chart of the top two customers by spend"). Leave it empty when the user now asks for a table or text, or asks about something else.
+        """
 
     # Visualization routing only matters when the platform actually supports charts.
     if supported_graphs:
@@ -341,6 +345,11 @@ Please follow these guidelines:
 7. **Column context and units:**
    - The SQL result columns are: {db_columns}
    - Use these column names to understand what each value in the result represents.
+   - Business definitions of the tables the query read, written by the database's owner:
+     {table_definitions}
+   - Take units, currency and the meaning of each metric from these definitions. When they say
+     which currency amounts are in, state amounts in that currency (e.g. "$9,953.07"); never say
+     the currency or unit is unknown or unspecified when the definitions give it.
    - When presenting numeric or monetary values, always include the associated unit, currency,
      or category column from the result. If a result row contains both a value and a currency/unit
      column, always show them together (e.g. "INR 80,000" not just "80,000").
@@ -365,7 +374,8 @@ Please follow these guidelines:
             logger.info(f"Final answer additional_instruction text_preview={prev}")
         except Exception:
             pass
-    answer_prompt = PromptTemplate.from_template(template_text).partial(allowed_tables=allowed_tables)
+    answer_prompt = PromptTemplate.from_template(template_text).partial(
+        allowed_tables=allowed_tables, table_definitions="None provided.")
     return answer_prompt
 
 def get_table_prompt():

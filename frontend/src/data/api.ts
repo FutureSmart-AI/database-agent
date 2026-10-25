@@ -19,10 +19,14 @@ export const APIS = {
    * `?stream=true` makes the route answer `text/event-stream`.
    */
   NL2SQL_CHAT: "/nl2sql/api/v1/agents/{service_id}/chat",
+  /** The signed-in user's free sample-data questions, used and remaining. */
+  DEMO_ALLOWANCE: "/nl2sql/api/v1/demo/allowance",
   NL2SQL_SESSIONS: "/nl2sql/api/v1/agents/{service_id}/sessions",
   /** GET reads the thread; PATCH renames it; DELETE removes it. */
   NL2SQL_SESSION: "/nl2sql/api/v1/agents/{service_id}/sessions/{session_id}",
   NL2SQL_FEEDBACK: "/nl2sql/api/v1/agents/{service_id}/feedback",
+  /** A problem with one answer; the service attaches the conversation. */
+  NL2SQL_REPORTS: "/nl2sql/api/v1/agents/{service_id}/reports",
 
   /** NL2SQL service — configuration. */
   NL2SQL_CONFIG: "/nl2sql/api/v1/agents/{service_id}/config",

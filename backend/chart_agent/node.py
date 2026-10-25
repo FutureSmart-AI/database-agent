@@ -47,7 +47,12 @@ from enum import Enum
 import json
 from logger import logger
 from chart_agent.utils.graph_mapper import extract_dataframe_schema, generate_graph_mapping
-from chart_agent.utils.graph_assembler import assemble_graph_data, infer_correct_chart_type
+from chart_agent.utils.graph_assembler import (
+    assemble_graph_data,
+    combine_label_columns,
+    infer_correct_chart_type,
+    plotted_measure_columns,
+)
 from otel_tracing import track_time
 from langsmith import traceable
 
@@ -81,6 +86,9 @@ class GraphAgentState(TypedDict):
 
     # Graph mapping
     graph_mapping_spec: dict | None
+
+    # Set once the chart type has been checked against the mapped measures
+    chart_type_checked: bool | None
 
     # Final graph data
     graph_data: dict | None
@@ -287,6 +295,10 @@ async def validate_chart_type_node(state: GraphAgentState) -> GraphAgentState:
     df = state.get("processed_dataframe")
     current_chart = state.get("suggested_chart_type")
 
+    if state.get("chart_type_checked"):
+        # Second pass after a correction re-mapped the corrected type.
+        return state
+
     if df is None or current_chart is None:
         # Emit a trace span so the no-op case is also visible in LangSmith
         await _trace_chart_validation(
@@ -300,7 +312,7 @@ async def validate_chart_type_node(state: GraphAgentState) -> GraphAgentState:
             corrected=False,
             reason="skipped: missing DataFrame or chart type",
         )
-        return state
+        return {**state, "chart_type_checked": True}
 
     # Normalise chart type to its string value
     chart_type_str = current_chart.value if hasattr(current_chart, "value") else str(current_chart)
@@ -309,11 +321,18 @@ async def validate_chart_type_node(state: GraphAgentState) -> GraphAgentState:
     allowed_graphs = state.get("allowed_graphs")
     allowed_strs = [g.value for g in allowed_graphs] if allowed_graphs else None
 
-    # Pre-compute column-type summaries for the trace
-    numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-    non_numeric_cols = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
+    # The mapping model names the plotted measures and the label columns.
+    mapping_spec = state.get("graph_mapping_spec") or {}
+    measure_columns = mapping_spec.get("measure_columns")
+    label_columns = mapping_spec.get("label_columns")
 
-    corrected_str, reason = infer_correct_chart_type(df, chart_type_str, allowed_strs)
+    # Pre-compute column-type summaries for the trace
+    numeric_cols = plotted_measure_columns(df, measure_columns)
+    non_numeric_cols = [c for c in df.columns if c not in numeric_cols]
+
+    corrected_str, reason = infer_correct_chart_type(
+        df, chart_type_str, allowed_strs, measure_columns, label_columns
+    )
 
     if reason:
         logger.warning(f"⚠️  [CHART_VALIDATION] Chart type corrected | {reason}")
@@ -337,7 +356,7 @@ async def validate_chart_type_node(state: GraphAgentState) -> GraphAgentState:
                 corrected=False,
                 reason=f"correction blocked: {corrected_str!r} is not a valid ChartType",
             )
-            return state
+            return {**state, "chart_type_checked": True}
 
         # Emit trace span showing the correction
         await _trace_chart_validation(
@@ -352,10 +371,13 @@ async def validate_chart_type_node(state: GraphAgentState) -> GraphAgentState:
             reason=reason,
         )
 
+        # Clear the mapping so the graph re-maps the corrected type once.
         return {
             **state,
             "suggested_chart_type": corrected_enum,
             "chart_type": corrected_str,
+            "graph_mapping_spec": None,
+            "chart_type_checked": True,
         }
 
     logger.info(
@@ -376,7 +398,7 @@ async def validate_chart_type_node(state: GraphAgentState) -> GraphAgentState:
         reason="structurally compatible — no correction needed",
     )
 
-    return state
+    return {**state, "chart_type_checked": True}
 
 
 async def suggest_chart_type_node(state: GraphAgentState) -> GraphAgentState:
@@ -558,6 +580,8 @@ async def generate_graph_mapping_node(state: GraphAgentState) -> GraphAgentState
                 }
                 for m in mapping_spec.field_mappings
             ],
+            "measure_columns": list(mapping_spec.measure_columns or []),
+            "label_columns": list(mapping_spec.label_columns or []),
             "metadata_config": mapping_spec.metadata_config.model_dump(),
             "reasoning": mapping_spec.reasoning
         }
@@ -622,10 +646,13 @@ async def assemble_graph_data_node(state: GraphAgentState) -> GraphAgentState:
     try:
         # Assemble data (pure Python)
         logger.info(f"Assembling {mapping_spec['chart_type']}")
+        df, field_mappings = combine_label_columns(
+            df, mapping_spec["field_mappings"], mapping_spec.get("label_columns")
+        )
         graph_data = assemble_graph_data(
             df=df,
             chart_type=mapping_spec["chart_type"],
-            field_mappings=mapping_spec["field_mappings"],
+            field_mappings=field_mappings,
             metadata_config=mapping_spec["metadata_config"],
             verbose=True
         )

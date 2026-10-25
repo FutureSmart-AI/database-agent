@@ -20,7 +20,9 @@ Never raises: a metrics failure must not fail a user's query.
 """
 from __future__ import annotations
 
-from typing import Any, Dict, List, Optional
+import time
+from contextlib import contextmanager
+from typing import Any, Dict, Iterator, List, Optional
 
 from logger import logger
 
@@ -50,6 +52,7 @@ def record_node_event(
     output_tokens: Any = None,
     total_tokens: Any = None,
     latency_ms: Any = None,
+    cached_input_tokens: Any = None,
     key_type: Optional[str] = None,
     calls: int = 1,
     errors: int = 0,
@@ -77,7 +80,7 @@ def record_node_event(
             entry = {
                 "node_name": node_name, "provider": provider, "model": model,
                 "input_tokens": 0, "output_tokens": 0, "total_tokens": 0,
-                "latency_ms": 0, "calls": 0, "errors": 0,
+                "cached_input_tokens": 0, "latency_ms": 0, "calls": 0, "errors": 0,
                 "key_type": None,
             }
             events.append(entry)
@@ -85,6 +88,8 @@ def record_node_event(
         entry["input_tokens"] += it
         entry["output_tokens"] += ot
         entry["total_tokens"] += tt
+        # Input tokens served from the provider's prompt cache (billed at the cached rate).
+        entry["cached_input_tokens"] = _as_int(entry.get("cached_input_tokens")) + _as_int(cached_input_tokens)
         entry["latency_ms"] += _as_int(latency_ms)
         entry["calls"] += max(1, _as_int(calls))
         entry["errors"] += _as_int(errors)
@@ -120,6 +125,43 @@ def record_node_seconds(
     except (TypeError, ValueError):
         ms = 0
     record_node_event(state, node_name, latency_ms=ms, **kwargs)
+
+
+@contextmanager
+def measure_node_calls(state: Dict[str, Any], node_name: str, operation: str,
+                       node_conf: Optional[Dict[str, Any]] = None) -> Iterator[None]:
+    """Record the model calls made inside the block as one node: time, tokens, cached
+    tokens, and the provider/model the operation resolves to.
+
+    For call sites that had no metrics of their own. Measurement never raises and never
+    changes the block: an exception from the block propagates unchanged, after recording.
+    """
+    started = time.time()
+    meter = callback = None
+    try:
+        from langchain_community.callbacks import get_openai_callback
+        meter = get_openai_callback()
+        callback = meter.__enter__()
+    except Exception as e:  # never let measurement affect the call
+        logger.debug("[node_metrics] %s meter unavailable: %s", node_name, e)
+    try:
+        yield
+    finally:
+        try:
+            if meter is not None:
+                meter.__exit__(None, None, None)
+            from agent.utils.model_profiles import operation_config
+            binding = operation_config(operation, node_conf)
+            record_node_seconds(
+                state, node_name, time.time() - started,
+                provider=binding.get("provider"), model=binding.get("model"),
+                input_tokens=getattr(callback, "prompt_tokens", 0),
+                output_tokens=getattr(callback, "completion_tokens", 0),
+                total_tokens=getattr(callback, "total_tokens", 0),
+                cached_input_tokens=getattr(callback, "prompt_tokens_cached", 0),
+            )
+        except Exception as e:
+            logger.debug("[node_metrics] %s not recorded: %s", node_name, e)
 
 
 def get_node_events(state: Dict[str, Any]) -> List[Dict[str, Any]]:

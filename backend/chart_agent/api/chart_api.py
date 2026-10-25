@@ -4,7 +4,9 @@ Accepts a CSV file + natural language question → returns structured chart data
 Supports both graph generation and direct conversational responses.
 """
 
-from fastapi import APIRouter, HTTPException, UploadFile, File, Form
+from fastapi import APIRouter, HTTPException, UploadFile, File, Form, Header
+from contextlib import nullcontext
+import hmac
 import tempfile
 import os
 from typing import Optional, List, Union
@@ -19,6 +21,7 @@ from logger import logger
 from chart_agent.models.graph_pydantic_models import DirectResponse, GraphGenerationResponse
 from agent.utils.usage_tracking import get_usage_tracker
 from otel_tracing import track_time
+from agent.utils.provider_key_scope import platform_key_scope
 
 # load_dotenv()
 
@@ -28,13 +31,36 @@ router = APIRouter(prefix="/v1")
 UnifiedResponse = Union[DirectResponse, GraphGenerationResponse]
 
 
+def _is_internal_caller(presented: Optional[str]) -> bool:
+    """True when the request carries this deployment's CHART_SERVICE_KEY.
+
+    The Chart API is shared: the Database Agent calls it in-process, and Document
+    Intelligence calls this route with ITS owner ids. Those owners are not Database
+    Agent workspaces, so on a bring-your-own-key deployment
+    (DEFAULT_PROVIDER_KEY_SOURCE=own) every DI chart failed with "No OpenAI API key is
+    configured for this workspace" — DI's own key policy (owner key, else platform) had
+    already been applied on its side and was being overruled by this one. A caller that
+    proves it is the trusted service gets the platform scope; usage is still attributed
+    to the owner_id it sends. Without the header nothing changes. A wrong key is refused
+    rather than silently downgraded, so a misconfigured caller is visible.
+    """
+    if not presented:
+        return False
+    expected = os.getenv("CHART_SERVICE_KEY") or ""
+    if not expected or not hmac.compare_digest(presented.encode(), expected.encode()):
+        logger.warning("Chart API: rejected a request with an invalid service key")
+        raise HTTPException(status_code=401, detail="Invalid chart service key")
+    return True
+
+
 @router.post("/chart_agent/generate")
 @track_time("API: Chart Agent - Generate Graph")
 async def generate_graph(
     query: str = Form(..., description="Natural language request for a chart, e.g. 'Show top 10 products by sales as a bar chart', or conversational queries like 'Hi'"),
     allowed_graphs: Optional[str] = Form(None, description='Optional comma-separated list of allowed chart types.'),
     owner_id: Optional[str] = Form(None, description="Owner identifier for usage tracking and multi-tenant routing"),
-    file: UploadFile = File(..., description="CSV file to analyze")
+    file: UploadFile = File(..., description="CSV file to analyze"),
+    x_chart_service_key: Optional[str] = Header(None, description="Service key of a trusted internal caller (Document Intelligence); selects platform provider keys"),
 ) -> UnifiedResponse:
     """
     Generate a chart from CSV using the LangGraph Graph Agent OR handle direct conversational queries.
@@ -44,6 +70,7 @@ async def generate_graph(
         - GraphGenerationResponse: For data visualization requests with structured chart data
     """
     logger.info(f"Graph generation request received - File: {file.filename}, Query: {query[:100]}, Allowed graphs: {allowed_graphs}")
+    internal_caller = _is_internal_caller(x_chart_service_key)
     
     # Validate file type
     if not file.filename.lower().endswith('.csv'):
@@ -84,12 +111,13 @@ async def generate_graph(
             logger.info(f"Starting graph agent generation for query: {query[:100]}")
             
             # Call the LangGraph-powered graph agent
-            result = await generate_graph_from_csv(
-                csv_path=temp_file_path,
-                question=query,
-                allowed_graphs=parsed_allowed_graphs,
-                owner_id=owner_id
-            )
+            async with (platform_key_scope(owner_id) if internal_caller else nullcontext()):
+                result = await generate_graph_from_csv(
+                    csv_path=temp_file_path,
+                    question=query,
+                    allowed_graphs=parsed_allowed_graphs,
+                    owner_id=owner_id
+                )
             execution_time = time.time() - start_time
             
             # Check if it's a direct response (dict with is_direct_response flag)

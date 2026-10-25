@@ -1,0 +1,309 @@
+{
+  "seed": 20251231,
+  "row_counts": {
+    "categories": 8,
+    "products": 120,
+    "customers": 2400,
+    "orders": 4950,
+    "order_items": 8689,
+    "payments": 4858,
+    "returns": 482
+  },
+  "answers": [
+    {
+      "question": "Who are our top five customers by total spend?",
+      "definition": "customer spend = sum of orders.total_amount over non-cancelled orders",
+      "columns": [
+        "customer",
+        "total_spend"
+      ],
+      "rows": [
+        [
+          "Lucas Thompson",
+          "9953.07"
+        ],
+        [
+          "Diego Hill",
+          "8596.40"
+        ],
+        [
+          "Grace Shah",
+          "7991.01"
+        ],
+        [
+          "Priya Allen",
+          "7882.44"
+        ],
+        [
+          "Lucas Silva",
+          "7474.99"
+        ]
+      ],
+      "reference_sql": "\n            SELECT c.first_name || ' ' || c.last_name AS customer, SUM(o.total_amount) AS total_spend\n            FROM orders o JOIN customers c USING (customer_id)\n            WHERE o.status <> 'cancelled'\n            GROUP BY c.customer_id, customer ORDER BY total_spend DESC, c.customer_id LIMIT 5"
+    },
+    {
+      "question": "Show a bar chart of the top five customers by total spend.",
+      "definition": "same as the previous question; expect a simple bar chart, one bar per customer",
+      "columns": [
+        "customer",
+        "total_spend"
+      ],
+      "rows": [
+        [
+          "Lucas Thompson",
+          "9953.07"
+        ],
+        [
+          "Diego Hill",
+          "8596.40"
+        ],
+        [
+          "Grace Shah",
+          "7991.01"
+        ],
+        [
+          "Priya Allen",
+          "7882.44"
+        ],
+        [
+          "Lucas Silva",
+          "7474.99"
+        ]
+      ],
+      "chart": "bar",
+      "reference_sql": null
+    },
+    {
+      "question": "How did monthly revenue change across 2025?",
+      "definition": "revenue = sum of orders.total_amount over non-cancelled orders, by order month",
+      "columns": [
+        "month",
+        "revenue"
+      ],
+      "rows": [
+        [
+          1,
+          "48983.10"
+        ],
+        [
+          2,
+          "54929.99"
+        ],
+        [
+          3,
+          "84128.35"
+        ],
+        [
+          4,
+          "75589.41"
+        ],
+        [
+          5,
+          "87089.00"
+        ],
+        [
+          6,
+          "85683.35"
+        ],
+        [
+          7,
+          "88363.08"
+        ],
+        [
+          8,
+          "107793.00"
+        ],
+        [
+          9,
+          "90262.39"
+        ],
+        [
+          10,
+          "128419.93"
+        ],
+        [
+          11,
+          "159738.98"
+        ],
+        [
+          12,
+          "190131.39"
+        ]
+      ],
+      "reference_sql": "\n            SELECT EXTRACT(MONTH FROM ordered_at)::int AS month, SUM(total_amount) AS revenue\n            FROM orders WHERE status <> 'cancelled' GROUP BY 1 ORDER BY 1"
+    },
+    {
+      "question": "Which product categories have the highest return rate?",
+      "definition": "return rate = approved returns / order items on delivered orders, per category, in percent",
+      "columns": [
+        "category",
+        "return_rate_pct"
+      ],
+      "rows": [
+        [
+          "Apparel",
+          "11.7"
+        ],
+        [
+          "Electronics",
+          "6.1"
+        ],
+        [
+          "Sports & Outdoors",
+          "5.1"
+        ],
+        [
+          "Home & Kitchen",
+          "4.6"
+        ],
+        [
+          "Office",
+          "3.7"
+        ],
+        [
+          "Beauty",
+          "3.6"
+        ],
+        [
+          "Toys & Games",
+          "2.6"
+        ],
+        [
+          "Books",
+          "2.3"
+        ]
+      ],
+      "reference_sql": "\n            SELECT cat.name AS category,\n                   ROUND(100.0 * COUNT(r.return_id) FILTER (WHERE r.status = 'approved')\n                         / COUNT(DISTINCT oi.order_item_id), 1) AS return_rate_pct\n            FROM order_items oi\n            JOIN orders o USING (order_id)\n            JOIN products p USING (product_id)\n            JOIN categories cat USING (category_id)\n            LEFT JOIN returns r USING (order_item_id)\n            WHERE o.status = 'delivered'\n            GROUP BY cat.name ORDER BY return_rate_pct DESC"
+    },
+    {
+      "question": "What are the most common reasons for returns?",
+      "definition": "count of all return requests by reason",
+      "columns": [
+        "reason",
+        "returns"
+      ],
+      "rows": [
+        [
+          "wrong size",
+          132
+        ],
+        [
+          "damaged in transit",
+          113
+        ],
+        [
+          "changed mind",
+          109
+        ],
+        [
+          "not as described",
+          80
+        ],
+        [
+          "defective",
+          48
+        ]
+      ],
+      "reference_sql": "\n            SELECT reason, COUNT(*) AS returns FROM returns GROUP BY reason ORDER BY returns DESC"
+    },
+    {
+      "question": "What share of orders was paid with each payment method?",
+      "definition": "captured payments by method, as a percent of all captured payments",
+      "columns": [
+        "method",
+        "orders",
+        "share_pct"
+      ],
+      "rows": [
+        [
+          "card",
+          2740,
+          58.1
+        ],
+        [
+          "paypal",
+          932,
+          19.8
+        ],
+        [
+          "bank_transfer",
+          483,
+          10.2
+        ],
+        [
+          "apple_pay",
+          377,
+          8.0
+        ],
+        [
+          "gift_card",
+          186,
+          3.9
+        ]
+      ],
+      "reference_sql": "\n            SELECT method, COUNT(*) AS orders,\n                   ROUND(100.0 * COUNT(*) / SUM(COUNT(*)) OVER (), 1) AS share_pct\n            FROM payments WHERE status = 'captured' GROUP BY method ORDER BY orders DESC"
+    },
+    {
+      "question": "Which acquisition channel brings customers with the highest average order value?",
+      "definition": "average order value = average orders.total_amount over non-cancelled orders, by the customer's acquisition_channel",
+      "columns": [
+        "acquisition_channel",
+        "average_order_value"
+      ],
+      "rows": [
+        [
+          "email",
+          "271.40"
+        ],
+        [
+          "referral",
+          "265.74"
+        ],
+        [
+          "marketplace",
+          "260.98"
+        ],
+        [
+          "social",
+          "258.48"
+        ],
+        [
+          "organic_search",
+          "249.12"
+        ],
+        [
+          "paid_search",
+          "241.93"
+        ]
+      ],
+      "reference_sql": "\n            SELECT c.acquisition_channel, ROUND(AVG(o.total_amount), 2) AS average_order_value\n            FROM orders o JOIN customers c USING (customer_id)\n            WHERE o.status <> 'cancelled'\n            GROUP BY c.acquisition_channel ORDER BY average_order_value DESC"
+    },
+    {
+      "question": "How many orders were cancelled in each quarter of 2025?",
+      "definition": "count of orders with status 'cancelled', by quarter of ordered_at",
+      "columns": [
+        "quarter",
+        "cancelled_orders"
+      ],
+      "rows": [
+        [
+          "Q1",
+          31
+        ],
+        [
+          "Q2",
+          41
+        ],
+        [
+          "Q3",
+          57
+        ],
+        [
+          "Q4",
+          103
+        ]
+      ],
+      "reference_sql": "\n            SELECT 'Q' || EXTRACT(QUARTER FROM ordered_at)::int AS quarter, COUNT(*) AS cancelled_orders\n            FROM orders WHERE status = 'cancelled' GROUP BY 1 ORDER BY 1"
+    }
+  ]
+}

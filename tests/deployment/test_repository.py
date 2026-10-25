@@ -57,7 +57,8 @@ class ProductTreeTests(unittest.TestCase):
         files = tracked_files()
         roots = {p.split("/")[0] for p in files}
         allowed = {".env.example", ".gitattributes", ".github", ".gitignore", "README.md", "LICENSE", "NOTICE",
-                   "backend", "frontend", "mcp-server", "deploy", "docs", "tests", "internal", "compose.yaml"}
+                   "AGENTS.md", "CLAUDE.md", "backend", "frontend", "mcp-server", "deploy", "docs", "tests",
+                   "internal", "compose.yaml"}
         self.assertEqual(roots - allowed, set())
         for prefix in ("saas db/", "saas evals/", "spider evals/", "evals/", "scripts/", "standalone/"):
             self.assertFalse(any(p.startswith(prefix) for p in files), prefix)
@@ -71,8 +72,9 @@ class ProductTreeTests(unittest.TestCase):
             names = tracked_files()
             self.assertFalse((ROOT / "internal").exists())
             self.assertFalse(any("internal" in Path(p).parts for p in names))
-            self.assertFalse(any((ROOT / p).exists() for p in
-                (".github/workflows/frontend-deploy.yml", ".github/workflows/frontend-rollback.yml")))
+            self.assertEqual(sorted(p.name for p in (ROOT / ".github/workflows").glob("*.yml")),
+                             ["standalone-product.yml"])
+            self.assertFalse((ROOT / "AGENTS.md").exists())
             return
         private = [p for p in tracked_files() if p.startswith("internal/")]
         self.assertIn("internal/STATUS.md", private)
@@ -109,10 +111,27 @@ class ProductTreeTests(unittest.TestCase):
                 data = (ROOT / name).read_bytes().replace(b"\r\n", b"\n")
                 self.assertEqual(hashlib.sha256(data).hexdigest(), digest)
 
+    def test_shell_scripts_the_workflows_run_are_executable(self):
+        # Workflows call these directly (`scripts/promote-release.sh`); a 100644 mode failed
+        # the first hosted deploy from this repository with "Permission denied".
+        if not (ROOT / ".git").exists():
+            self.skipTest("file modes come from the Git index")
+        entries = subprocess.check_output(["git", "ls-files", "-s", "--", "*.sh"], cwd=ROOT, text=True).splitlines()
+        self.assertTrue(entries)
+        for entry in entries:
+            mode, _, _, name = entry.split(maxsplit=3)
+            self.assertEqual(mode, "100755", name)
+
     def test_automation_does_not_publish_or_write_to_external_task_systems(self):
+        # Only the product CI and the hosted frontend deploy run on push. The deploy is
+        # limited to main and to changes under frontend/ (its OIDC role trusts only main);
+        # everything else that reaches production or the public repository is manual.
         for name in (ROOT / ".github/workflows").glob("*.yml"):
             text = name.read_text()
-            if name.name != "standalone-product.yml":
+            if name.name == "frontend-deploy.yml":
+                self.assertIn("    branches: [main]\n    paths:\n      - \"frontend/**\"", text)
+                self.assertIn("github.ref == 'refs/heads/main'", text)
+            elif name.name != "standalone-product.yml":
                 self.assertIn("workflow_dispatch:", text)
                 self.assertNotIn("  push:", text)
             self.assertNotIn("push_docs_to_clickup", text)

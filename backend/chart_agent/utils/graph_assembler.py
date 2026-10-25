@@ -496,10 +496,51 @@ def assemble_scatter_chart(
 # CHART TYPE STRUCTURAL VALIDATOR
 # ============================================================================
 
+def plotted_measure_columns(df: pd.DataFrame, measure_columns: List[str] | None = None) -> List[str]:
+    """Numeric columns the chart plots: the mapping's measures when it named any, else every numeric column."""
+    numeric = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
+    if measure_columns:
+        named = [c for c in measure_columns if c in numeric]
+        if named:
+            return named
+    return numeric
+
+
+def combine_label_columns(
+    df: pd.DataFrame,
+    field_mappings: List[Dict[str, str]],
+    label_columns: List[str] | None = None,
+) -> tuple:
+    """
+    Join a multi-column item name (e.g. first_name + last_name) into one label column.
+
+    The mapping model maps the label field to the first label column; this
+    repoints that mapping to the joined column so each item gets one full label
+    instead of the second name part becoming a stack segment or being dropped.
+    Returns (df, field_mappings), unchanged when there is a single label column.
+    """
+    cols = [c for c in (label_columns or []) if c in df.columns]
+    if len(cols) < 2:
+        return df, field_mappings
+    joined = "_".join(cols)
+    while joined in df.columns:
+        joined = f"{joined}_label"
+    df = df.copy()
+    df[joined] = df[cols].astype(str).agg(" ".join, axis=1)
+    remapped = [
+        {**m, "dataframe_column": joined} if m["dataframe_column"] == cols[0] else m
+        for m in field_mappings
+        if m["dataframe_column"] not in cols[1:]
+    ]
+    return df, remapped
+
+
 def infer_correct_chart_type(
     df: pd.DataFrame,
     current_chart_type: str,
-    allowed_graphs: List[str] | None = None
+    allowed_graphs: List[str] | None = None,
+    measure_columns: List[str] | None = None,
+    label_columns: List[str] | None = None,
 ) -> tuple:
     """
     Validates the actual DataFrame structure against the selected chart type.
@@ -508,10 +549,18 @@ def infer_correct_chart_type(
     reason is None when no correction is needed.
     When a correction is made, reason explains WHY so it can be logged clearly.
 
-    Rules are purely structural — no LLM involved.
+    Which columns are plotted quantities is a semantic call made by the mapping
+    model (measure_columns); identifiers such as `id` are numeric but are not
+    series. The rules below only count those measures. Without a measure list
+    every numeric column is counted.
     """
-    numeric_cols = [c for c in df.columns if pd.api.types.is_numeric_dtype(df[c])]
-    non_numeric_cols = [c for c in df.columns if not pd.api.types.is_numeric_dtype(df[c])]
+    numeric_cols = plotted_measure_columns(df, measure_columns)
+    # A name split over several columns (first_name, last_name) is one dimension, not two.
+    labels = [c for c in (label_columns or []) if c in df.columns]
+    non_numeric_cols = [
+        c for c in df.columns
+        if not pd.api.types.is_numeric_dtype(df[c]) and c not in labels[1:]
+    ]
     n_numeric = len(numeric_cols)
     n_rows = len(df)
 

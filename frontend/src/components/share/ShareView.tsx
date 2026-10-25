@@ -25,7 +25,7 @@ import {
 } from "@/data/widgetSettings";
 import { apiMessage } from "@/lib/apiError";
 import { copyText } from "@/lib/clipboard";
-import { agentRoute, publicHost, ROUTES } from "@/lib/routes";
+import { agentRoute, publicApiRoot, publicHost, ROUTES } from "@/lib/routes";
 import { useToast } from "@/platform/components/ToastContext";
 import {
   Button,
@@ -342,6 +342,7 @@ export default function ShareView({ agentId }: ShareViewProps) {
   }
 
   const host = publicHost();
+  const apiRoot = publicApiRoot();
   const shareUrl = `${host}/agent/${agent.agent_id}/?mode=fullscreen`;
   const copy = async (text: string, what: string) => {
     const copied = await copyText(text);
@@ -442,7 +443,7 @@ export default function ShareView({ agentId }: ShareViewProps) {
     py: `import requests
 
 r = requests.post(
-    "${host}/nl2sql/api/v1/agents/${agent.agent_id}/chat",
+    "${apiRoot}/v1/agents/${agent.agent_id}/chat",
     headers={"x-api-key": "<YOUR_API_KEY>"},
     json={"query": "Show products with stock quantity less than 10",
           "chart_output": True, "follow_up": True, "debug_info": True},
@@ -452,7 +453,7 @@ d = r.json()
 print(d["response"])
 print(d["debug_info"]["sql_query"])`,
     js: `const r = await fetch(
-  "${host}/nl2sql/api/v1/agents/${agent.agent_id}/chat",
+  "${apiRoot}/v1/agents/${agent.agent_id}/chat",
   { method: "POST",
     headers: { "Content-Type": "application/json",
                "x-api-key": "<YOUR_API_KEY>" },
@@ -463,7 +464,7 @@ print(d["debug_info"]["sql_query"])`,
 const d = await r.json();
 console.log(d.response, d.debug_info.sql_query);`,
     curl: `curl -X POST \\
-  "${host}/nl2sql/api/v1/agents/${agent.agent_id}/chat" \\
+  "${apiRoot}/v1/agents/${agent.agent_id}/chat" \\
   -H "Content-Type: application/json" \\
   -H "x-api-key: <YOUR_API_KEY>" \\
   -d '{"query": "Show products with stock quantity less than 10",

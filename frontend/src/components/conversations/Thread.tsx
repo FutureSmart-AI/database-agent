@@ -30,6 +30,8 @@ interface ThreadProps {
   initialSuggestedQuestions?: string[];
   /** Puts a suggested question into the composer. */
   onPickQuestion: (question: string) => void;
+  /** No question can be sent right now: follow-up suggestions are not offered. */
+  suggestionsDisabled?: boolean;
   error?: string | null;
 }
 
@@ -50,6 +52,7 @@ export default function Thread({
   excludedTables,
   initialSuggestedQuestions,
   onPickQuestion,
+  suggestionsDisabled = false,
   error,
 }: ThreadProps) {
   const scroller = useRef<HTMLDivElement>(null);
@@ -142,7 +145,11 @@ export default function Thread({
         })}
 
         {!streaming && turns.length > 0 && (
-          <FollowUps questions={followUps} onPick={onPickQuestion} />
+          <FollowUps
+            questions={followUps}
+            onPick={onPickQuestion}
+            disabled={suggestionsDisabled}
+          />
         )}
       </div>
     </div>

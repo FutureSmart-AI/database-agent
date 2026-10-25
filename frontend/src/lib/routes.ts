@@ -26,6 +26,21 @@ export function publicHost(): string {
   return typeof window === "undefined" ? "" : window.location.origin;
 }
 
+/**
+ * The API root printed in the API examples people copy.
+ *
+ * The hosted product's canonical public API root is
+ * `https://futuresmart.ai/database-agent/api`, which production sets as
+ * `NEXT_PUBLIC_PUBLIC_API_ROOT` (see docs/configuration.md). It serves the same
+ * routes as `<host>/nl2sql/api`, which stays the app's own internal path and
+ * the fallback here, so a staging or self-hosted build prints its own API.
+ */
+export function publicApiRoot(): string {
+  const configured = process.env.NEXT_PUBLIC_PUBLIC_API_ROOT;
+  if (configured) return configured.replace(/\/+$/, "");
+  return `${publicHost()}/nl2sql/api`;
+}
+
 /** The product entry point. */
 export const APP = "/database-agent";
 

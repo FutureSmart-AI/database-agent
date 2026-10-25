@@ -36,6 +36,20 @@ class ModelConfigurationError(ValueError):
     """Invalid operation configuration; error messages never include credentials."""
 
 
+class ProviderCredentialError(ModelConfigurationError):
+    """A bring-your-own-key owner has no usable key for the provider a call needs.
+
+    A ModelConfigurationError so every existing `except ModelConfigurationError: raise`
+    in the graph propagates it rather than degrading to a fallback answer. `code` is
+    stable for clients (see agent/utils/provider_key_scope.py); messages name the
+    provider and the fix and never contain key material.
+    """
+
+    def __init__(self, code: str, message: str):
+        super().__init__(message)
+        self.code = code
+
+
 def _object(value: Any, where: str) -> dict:
     if not isinstance(value, dict):
         raise ModelConfigurationError(f"{where} must be an object")
@@ -209,7 +223,8 @@ def build_chat_model(conf: dict, *, api_key: str | None = None, **transport: Any
     conf = validate_binding(conf)
     provider = conf["provider"]
     module, cls, key_env = PROVIDERS[provider]
-    key = api_key or os.getenv(key_env)
+    from agent.utils.provider_key_scope import env_key_for
+    key = api_key or env_key_for(provider, key_env)
     if not key:
         raise ModelConfigurationError(f"Missing {key_env} for selected provider {provider}")
     try:

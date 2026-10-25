@@ -263,7 +263,8 @@ async def node_db_router(state: AgentState) -> AgentState:
     _route_seconds = time.time() - _route_start
     record_node_seconds(state, "db_router", _route_seconds, provider=provider, model=model_name,
                         input_tokens=input_tokens, output_tokens=output_tokens,
-                        total_tokens=tokens_used, key_type=key_type)
+                        total_tokens=tokens_used, key_type=key_type,
+                        cached_input_tokens=getattr(cb, "prompt_tokens_cached", 0))
 
     # Usage event: this routing call went unrecorded entirely, so on a multi-DB agent the
     # spend was invisible to billing rather than merely misattributed to the platform.

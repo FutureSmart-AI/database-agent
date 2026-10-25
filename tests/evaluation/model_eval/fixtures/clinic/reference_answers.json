@@ -1,0 +1,243 @@
+{
+  "seed": 20250630,
+  "row_counts": {
+    "locations": 3,
+    "services": 6,
+    "clinicians": 8,
+    "clinician_locations": 13,
+    "shifts": 821,
+    "patients": 900,
+    "appointments": 3727,
+    "invoices": 3074,
+    "payments": 3471
+  },
+  "answers": [
+    {
+      "id": "clinic_no_show_rate",
+      "question": "What is the no-show rate at each clinic location?",
+      "definition": "no-shows / (completed + no-show appointments) per location, percent to 1 decimal; cancelled appointments excluded",
+      "columns": [
+        "location",
+        "no_show_rate_pct"
+      ],
+      "rows": [
+        [
+          "Riverbend Lakeview",
+          "10.4"
+        ],
+        [
+          "Riverbend Eastside",
+          "10.2"
+        ],
+        [
+          "Riverbend Downtown",
+          "8.4"
+        ]
+      ],
+      "ordered": false,
+      "reference_sql": "\n            SELECT l.name AS location,\n                   ROUND(100.0 * COUNT(*) FILTER (WHERE a.status = 'no_show') / COUNT(*), 1) AS no_show_rate_pct\n            FROM appointments a JOIN locations l USING (location_id)\n            WHERE a.status IN ('completed', 'no_show')\n            GROUP BY l.name ORDER BY no_show_rate_pct DESC, location"
+    },
+    {
+      "id": "clinic_lead_time",
+      "question": "What is the average booking lead time in days for each service?",
+      "definition": "days from booked_at date to starts_at date, averaged over non-cancelled appointments per service, 1 decimal",
+      "columns": [
+        "service",
+        "avg_lead_days"
+      ],
+      "rows": [
+        [
+          "Mental health session",
+          "10.1"
+        ],
+        [
+          "Physiotherapy session",
+          "9.5"
+        ],
+        [
+          "Vaccination",
+          "9.5"
+        ],
+        [
+          "General consultation",
+          "9.1"
+        ],
+        [
+          "Dermatology review",
+          "9.0"
+        ],
+        [
+          "Nutrition counselling",
+          "8.9"
+        ]
+      ],
+      "ordered": false,
+      "reference_sql": "\n            SELECT s.name AS service, ROUND(AVG(a.starts_at::date - a.booked_at::date), 1) AS avg_lead_days\n            FROM appointments a JOIN services s USING (service_id)\n            WHERE a.status <> 'cancelled'\n            GROUP BY s.name ORDER BY avg_lead_days DESC, service"
+    },
+    {
+      "id": "clinic_idle_june",
+      "question": "Which clinicians had no completed appointments in June 2025?",
+      "definition": "clinicians with zero appointments of status completed starting in June 2025, including those with none at all",
+      "columns": [
+        "clinician"
+      ],
+      "rows": [
+        [
+          "Dr. Marco Rossi"
+        ],
+        [
+          "Ines Novak"
+        ]
+      ],
+      "ordered": false,
+      "reference_sql": "\n            SELECT c.full_name AS clinician FROM clinicians c\n            WHERE NOT EXISTS (SELECT 1 FROM appointments a WHERE a.clinician_id = c.clinician_id\n                              AND a.status = 'completed'\n                              AND a.starts_at >= '2025-06-01' AND a.starts_at < '2025-07-01')\n            ORDER BY clinician"
+    },
+    {
+      "id": "clinic_utilization_march",
+      "question": "What was each clinician's utilization in March 2025?",
+      "definition": "minutes of completed and no-show appointments starting in March / minutes of that clinician's March shifts, percent to 1 decimal, for clinicians with March shifts",
+      "columns": [
+        "clinician",
+        "utilization_pct"
+      ],
+      "rows": [
+        [
+          "Priya Raman",
+          "38.3"
+        ],
+        [
+          "Dr. Leila Haddad",
+          "38.1"
+        ],
+        [
+          "Dr. Felix Brandt",
+          "35.7"
+        ],
+        [
+          "Ines Novak",
+          "35.2"
+        ],
+        [
+          "Sam Turner",
+          "33.5"
+        ],
+        [
+          "Dr. Hana Okafor",
+          "32.4"
+        ],
+        [
+          "Dr. Marco Rossi",
+          "31.7"
+        ],
+        [
+          "Dr. Aiko Tanaka",
+          "29.8"
+        ]
+      ],
+      "ordered": false,
+      "reference_sql": "\n            WITH shift_minutes AS (\n                SELECT clinician_id, SUM(EXTRACT(EPOCH FROM ends_at - starts_at) / 60) AS minutes\n                FROM shifts WHERE shift_date >= '2025-03-01' AND shift_date < '2025-04-01'\n                GROUP BY clinician_id),\n            booked AS (\n                SELECT clinician_id, SUM(duration_min) AS minutes FROM appointments\n                WHERE status IN ('completed', 'no_show')\n                  AND starts_at >= '2025-03-01' AND starts_at < '2025-04-01'\n                GROUP BY clinician_id)\n            SELECT c.full_name AS clinician,\n                   ROUND(100.0 * COALESCE(b.minutes, 0) / s.minutes, 1) AS utilization_pct\n            FROM shift_minutes s JOIN clinicians c USING (clinician_id)\n            LEFT JOIN booked b USING (clinician_id)\n            ORDER BY utilization_pct DESC, clinician"
+    },
+    {
+      "id": "clinic_new_patients",
+      "question": "How many new patients did we see each month?",
+      "definition": "a patient is new in the month of their first completed appointment; January to June 2025",
+      "columns": [
+        "month",
+        "new_patients"
+      ],
+      "rows": [
+        [
+          1,
+          208
+        ],
+        [
+          2,
+          108
+        ],
+        [
+          3,
+          116
+        ],
+        [
+          4,
+          106
+        ],
+        [
+          5,
+          84
+        ],
+        [
+          6,
+          84
+        ]
+      ],
+      "ordered": true,
+      "reference_sql": "\n            SELECT EXTRACT(MONTH FROM first_visit)::int AS month, COUNT(*) AS new_patients\n            FROM (SELECT patient_id, MIN(starts_at) AS first_visit FROM appointments\n                  WHERE status = 'completed' GROUP BY patient_id) f\n            GROUP BY 1 ORDER BY 1"
+    },
+    {
+      "id": "clinic_outstanding_by_payer",
+      "question": "What is the outstanding balance by payer type?",
+      "definition": "invoice amount minus all payments on that invoice, summed by the patient's payer_type",
+      "columns": [
+        "payer_type",
+        "outstanding"
+      ],
+      "rows": [
+        [
+          "insurance",
+          "14316.50"
+        ],
+        [
+          "self_pay",
+          "11000.50"
+        ],
+        [
+          "employer",
+          "2246.50"
+        ]
+      ],
+      "ordered": false,
+      "reference_sql": "\n            SELECT p.payer_type, SUM(i.amount - COALESCE(pp.paid, 0)) AS outstanding\n            FROM invoices i\n            JOIN appointments a USING (appointment_id)\n            JOIN patients p USING (patient_id)\n            LEFT JOIN (SELECT invoice_id, SUM(amount) AS paid FROM payments GROUP BY invoice_id) pp USING (invoice_id)\n            GROUP BY p.payer_type ORDER BY outstanding DESC, p.payer_type"
+    },
+    {
+      "id": "clinic_top_services_collected",
+      "question": "Which three services brought in the most money collected?",
+      "definition": "sum of payments.amount by the service of the invoiced appointment, top 3",
+      "columns": [
+        "service",
+        "collected"
+      ],
+      "rows": [
+        [
+          "General consultation",
+          "85851.50"
+        ],
+        [
+          "Dermatology review",
+          "63684.00"
+        ],
+        [
+          "Physiotherapy session",
+          "58100.00"
+        ]
+      ],
+      "ordered": true,
+      "reference_sql": "\n            SELECT s.name AS service, SUM(py.amount) AS collected\n            FROM payments py JOIN invoices i USING (invoice_id)\n            JOIN appointments a USING (appointment_id) JOIN services s USING (service_id)\n            GROUP BY s.name ORDER BY collected DESC, service LIMIT 3"
+    },
+    {
+      "id": "clinic_multi_clinician_patients",
+      "question": "How many patients have been seen by more than one clinician?",
+      "definition": "patients whose completed appointments involve at least two distinct clinicians",
+      "columns": [
+        "patients"
+      ],
+      "rows": [
+        [
+          328
+        ]
+      ],
+      "ordered": true,
+      "reference_sql": "\n            SELECT COUNT(*) AS patients FROM (\n                SELECT patient_id FROM appointments WHERE status = 'completed'\n                GROUP BY patient_id HAVING COUNT(DISTINCT clinician_id) > 1) m"
+    }
+  ]
+}

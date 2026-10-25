@@ -59,8 +59,10 @@ class TemplateInheritanceTests(unittest.IsolatedAsyncioTestCase):
         self.db_module = types.SimpleNamespace(upsert_node_configs_in_db=self.write)
 
     async def apply(self):
-        request = CreateAgentRequest(agent_name='fresh synthetic agent')
-        self.assertEqual(request.template_id, DEFAULT_TEMPLATE_ID)
+        # No template unless the creator chooses one (DA-ANSWERABILITY-001).
+        self.assertIsNone(CreateAgentRequest(agent_name='fresh synthetic agent').template_id)
+        self.assertIsNone(DEFAULT_TEMPLATE_ID)
+        request = CreateAgentRequest(agent_name='fresh synthetic agent', template_id='saas_founder')
         with patch.dict(sys.modules, {'chatbot_management.db_utils.chatbot_node_db_utils': self.db_module}):
             result = await self.templates.apply_template('synthetic-agent', request.template_id)
         self.assertTrue(result['applied'])

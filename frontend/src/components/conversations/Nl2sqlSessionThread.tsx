@@ -29,6 +29,8 @@ interface Nl2sqlSessionThreadProps {
   excludedTables?: string[];
   /** Starter questions, until the agent suggests its own. */
   initialSuggestedQuestions?: string[];
+  /** Shown instead of the composer when no question can be sent. */
+  composerBlockedNote?: string | null;
 }
 
 /**
@@ -54,6 +56,7 @@ const Nl2sqlSessionThread = ({
   voiceOutputEnabled,
   excludedTables,
   initialSuggestedQuestions,
+  composerBlockedNote,
 }: Nl2sqlSessionThreadProps) => {
   const {
     loading,
@@ -66,6 +69,12 @@ const Nl2sqlSessionThread = ({
     error,
   } = useChatStream(chatTransport);
   const [inputValue, setInputValue] = useState("");
+  // Bumped when a suggested follow-up is put into the composer, so Enter sends it.
+  const [composerFocus, setComposerFocus] = useState(0);
+  const pickQuestion = useCallback((question: string) => {
+    setInputValue(question);
+    setComposerFocus((n) => n + 1);
+  }, []);
   const [messageLoading, setMessageLoading] = useState(false);
 
   // Clear the thread the moment the selection changes, or the previous
@@ -124,7 +133,8 @@ const Nl2sqlSessionThread = ({
         voiceOutputEnabled={voiceOutputEnabled}
         excludedTables={excludedTables}
         initialSuggestedQuestions={initialSuggestedQuestions}
-        onPickQuestion={setInputValue}
+        onPickQuestion={pickQuestion}
+        suggestionsDisabled={Boolean(composerBlockedNote)}
         error={error}
       />
       {readOnly ? (
@@ -139,6 +149,8 @@ const Nl2sqlSessionThread = ({
           onChange={setInputValue}
           onSend={handleSendMessage}
           voiceInputEnabled={voiceInputEnabled}
+          blockedNote={composerBlockedNote}
+          focusSignal={composerFocus}
         />
       )}
     </>

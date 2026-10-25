@@ -13,6 +13,8 @@ export interface ParsedSSEEvent {
   trace_id?: string;
   /** The service's own verdict: false means the run did not answer. */
   is_answered?: boolean;
+  /** The run's latency, tokens and estimated cost (NL2SQL `usage`). */
+  usage?: unknown;
   /**
    * A run that broke after the stream opened. The response is still 200 and the
    * stream still ends normally, so this is the only sign the answer failed.

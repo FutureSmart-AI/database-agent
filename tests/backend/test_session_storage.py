@@ -1,7 +1,7 @@
 """Session isolation on actual SQL: the product's queries against real PostgreSQL tables.
 
-Runs against the disposable database named by SESSION_STORAGE_TEST_URL (an asyncpg URL; the
-session-storage CI job starts one) and is skipped without it. The tables are the product's own
+Runs against the disposable database named by DEMO_ALLOWANCE_TEST_URL (an asyncpg URL; the
+demo-allowance CI job starts one) and is skipped without it. The tables are the product's own
 models (chat_sessions, nl2sql_logs); the functions are the product's source bodies, bound to
 that database. Synthetic agents, sessions and rows only.
 
@@ -22,10 +22,10 @@ from fastapi import HTTPException
 from access_policy_harness import BACKEND, load_function
 
 sys.path.insert(0, str(BACKEND))
-TEST_URL = os.getenv("SESSION_STORAGE_TEST_URL")
+TEST_URL = os.getenv("DEMO_ALLOWANCE_TEST_URL")
 
 
-@unittest.skipUnless(TEST_URL, "SESSION_STORAGE_TEST_URL not set")
+@unittest.skipUnless(TEST_URL, "DEMO_ALLOWANCE_TEST_URL not set")
 class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
     async def asyncSetUp(self):
         from sqlalchemy.engine.row import Row
@@ -76,6 +76,7 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
             await s.commit()
 
         common = dict(select=select, ChatLogs=ChatLogs, ChatSessions=ChatSessions, Row=Row)
+        history = load_function("agent/db_utils/session_db_utils.py", "chat_log_history")
         self.owners = load_function("session/db_utils/session_db_utils.py", "get_session_agent_ids",
                                     get_async_session=session_cm, **common)
         self.details = load_function("session/db_utils/session_db_utils.py", "get_session_details",
@@ -84,7 +85,7 @@ class SessionStorageTests(unittest.IsolatedAsyncioTestCase):
         self.replay = load_function("session/db_utils/session_db_utils.py", "get_session_data",
                                     get_async_session=session_cm, _chart_for_replay=chart, **common)
         self.past = load_function("api/v1/utils/chat_helper.py", "get_past_conversation_safe",
-                                  get_async_session=session_gen, **common)
+                                  get_async_session=session_gen, chat_log_history=history, **common)
         self.guard = load_function("api/v1/utils/chat_helper.py", "ensure_session_belongs_to_agent",
                                    HTTPException=HTTPException)
         self.export_row = load_function("api/v1/utils/chat_helper.py", "get_chat_log_for_export",

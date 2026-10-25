@@ -26,7 +26,15 @@ export default function FullLogs({ log }: { log: RunLog }) {
     ...(log.totals?.totalTokens
       ? [`${log.totals.totalTokens.toLocaleString()} tokens`]
       : []),
-    ...(log.totals?.costUsd ? [formatCost(log.totals.costUsd)] : []),
+    ...(log.totals?.costUsd
+      ? [
+          log.totals.costEstimated
+            ? `≈${formatCost(log.totals.costUsd)} estimated`
+            : formatCost(log.totals.costUsd),
+        ]
+      : log.totals?.costIncomplete
+        ? ["cost not available for every model"]
+        : []),
   ];
 
   return (
@@ -67,9 +75,10 @@ export default function FullLogs({ log }: { log: RunLog }) {
 
       {open && (
         <div className="border-t border-n2s-line">
-          {/* The run as a whole. Tokens and cost ride a `usage` block the
-              service does not send today, so a turn without one says what it
-              has rather than printing zeroes. */}
+          {/* The run as a whole. Tokens and cost ride the `usage` block of a
+              live answer (NL2SQL's cost is a list-price estimate, marked ≈);
+              a stored turn has none, so it says what it has rather than
+              printing zeroes. */}
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 border-b border-n2s-line bg-n2s-card-2 px-3.5 py-1.5">
             {summary.length ? (
               summary.map((entry, index) => (
@@ -155,7 +164,7 @@ function LogStep({
         ]
       : []),
     ...(step.call?.costUsd !== undefined
-      ? [formatCost(step.call.costUsd)]
+      ? [`${step.call.estimated ? "≈" : ""}${formatCost(step.call.costUsd)}`]
       : []),
   ];
 

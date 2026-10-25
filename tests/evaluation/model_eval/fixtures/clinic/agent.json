@@ -1,0 +1,20 @@
+{
+  "agent_name": "Model evaluation: Riverbend Clinics",
+  "database": {
+    "db_name": "eval_clinic",
+    "db_user": "eval_clinic_reader",
+    "db_engine": "postgresql",
+    "description": "Riverbend Clinics, a synthetic group of three outpatient clinics. Covers January to June 2025: locations, clinicians and where they work, their shifts, patients, appointments, invoices for completed visits and the payments made against them."
+  },
+  "tables": {
+    "locations": "The three clinic locations. location_id, name, city.",
+    "services": "Services the clinics offer. duration_min is the length of one appointment in minutes; price is what one completed visit is invoiced, in US dollars.",
+    "clinicians": "One row per clinician. full_name is the clinician's name; specialty is their discipline.",
+    "clinician_locations": "Which locations each clinician works at (a clinician can work at several locations, a location has several clinicians).",
+    "shifts": "Working shifts: one row per clinician per day worked, at one location, from starts_at to ends_at (local times on shift_date). Shift minutes = ends_at - starts_at. Utilization of a clinician in a period = minutes of their completed and no-show appointments starting in that period / minutes of their shifts in that period, as a percent.",
+    "patients": "One row per patient. payer_type is who pays the patient's invoices: insurance, self_pay or employer. A patient is new in the month of their first completed appointment.",
+    "appointments": "One row per booked appointment. booked_at is when it was booked, starts_at when it takes place; duration_min is its length. status is completed, no_show (the patient did not attend) or cancelled. No-show rate = no_show appointments / (completed + no_show appointments), as a percent; cancelled appointments are excluded. Booking lead time = days from the booked_at date to the starts_at date, over appointments that were not cancelled.",
+    "invoices": "One invoice per completed appointment (appointment_id is unique). amount is the amount invoiced in US dollars. Outstanding balance of an invoice = amount minus the sum of its payments.",
+    "payments": "Payments against invoices, in US dollars. An invoice can be paid in several partial payments, partly, or not at all. Money collected = sum of payments.amount."
+  }
+}

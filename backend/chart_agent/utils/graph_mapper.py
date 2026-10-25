@@ -121,6 +121,20 @@ class GraphMappingSpec(BaseModel):
     """Complete specification for mapping DataFrame to graph"""
     chart_type: str = Field(description="The chart type being generated")
     field_mappings: List[FieldMapping] = Field(description="List of field mappings from DataFrame columns to graph fields")
+    measure_columns: List[str] = Field(
+        description=(
+            "Every DataFrame column that holds a quantity the chart should plot as its own series "
+            "(for example revenue or order_count). Exclude identifiers and keys such as id, "
+            "customer_id or codes even when they are numeric, and exclude columns used only as labels."
+        )
+    )
+    label_columns: List[str] = Field(
+        description=(
+            "The column or columns that together name each plotted item, in display order "
+            "(for example ['first_name', 'last_name'] for a person). Use one column when one "
+            "column already names the item. Do not include identifiers when a name column exists."
+        )
+    )
     metadata_config: MetadataConfig = Field(description="Configuration for graph metadata")
     reasoning: str = Field(description="Explanation of why these mappings were chosen")
 
@@ -201,11 +215,18 @@ Given a DataFrame schema (column names and types only), map the columns to the r
 4. Provide clear reasoning for your mappings
 5. Generate appropriate metadata (title, axis labels, legend settings)
 6. Select an appropriate color scheme: default, warm, cool, or monochrome
+7. Classify the columns: list the quantities to plot in measure_columns and the columns
+   that name each item in label_columns. Identifier and key columns (id, customer_id,
+   codes) are neither, even when numeric. If an item's name spans several columns, list
+   them all in label_columns and map the chart's label field to the first of them; the
+   chart displays them joined.
 
 **Output Format:**
 Provide a complete GraphMappingSpec with:
 - chart_type: The chart type
 - field_mappings: List of FieldMapping objects
+- measure_columns: the columns holding plotted quantities (never identifiers)
+- label_columns: the columns that name each plotted item
 - metadata_config: MetadataConfig with title, labels, and display settings.
   - When multiple series or segments exist (for example, several numeric columns being compared across a shared category, or a categorical column that defines groups/segments),
     you MUST:

@@ -69,7 +69,12 @@ def _resolve_owner(auth: dict, owner_id: str) -> str:
                 detail="owner_id 'me' requires a session; name the owner explicitly with an API key",
             )
         owner_id = resolved
-    return (owner_id or "").strip().lower()
+    owner_id = (owner_id or "").strip().lower()
+    # A browser session reads only its own settings and usage; master-key callers name
+    # the owner explicitly.
+    if auth.get("auth_type") == "session" and owner_id != (auth.get("user_id") or "").strip().lower():
+        raise HTTPException(status_code=403, detail="A session may only read its own owner settings")
+    return owner_id
 
 
 def _require_master_key(auth: dict) -> None:
@@ -132,6 +137,7 @@ async def _save(payload: OwnerConfigUpdate, owner_id: str, auth: dict, *, replac
                 tier_type=payload.tier_type,
                 base_tier=payload.base_tier,
                 limits=limits,
+                provider_key_source=payload.provider_key_source,
                 acting_user=auth.get("user_id") or "master_api_key",
                 replace=replace,
             )

@@ -70,6 +70,47 @@ def agentstate_to_graphagentstate(parent_state: AgentState, csv_path: str) -> Di
 
     return state
 
+def chart_follow_up_question(parent_state: AgentState, previous_had_chart: bool):
+    """The chart request to hand the chart agent for a follow-up that narrows a charted answer.
+
+    The chart agent is given the user's own words (see agentstate_to_graphagentstate), so
+    "Only show the top two." after "Show a bar chart of the top five customers" reached it with
+    no chart language and the chart was dropped. When the previous answer in this conversation
+    did draw a chart (a recorded fact) and the router judged that this follow-up still wants one
+    (a non-empty visualization_query, its "Chart inheritance" rule), the router's resolved chart
+    request is used instead. Any other turn keeps the user's words, as before.
+    """
+    from agent.runner import _CHART_KEYWORDS
+
+    query = (parent_state.get("query") or "").lower()
+    resolved = (parent_state.get("visualization_query") or "").strip()
+    if (previous_had_chart and resolved and parent_state.get("past_messages")
+            and not any(k in query for k in _CHART_KEYWORDS)):
+        return resolved
+    return None
+
+
+async def previous_answer_had_chart(session_id) -> bool:
+    """Whether the latest logged answer in this conversation drew a chart. The current turn is
+    logged after it is answered, so the latest row is the previous turn."""
+    if not session_id:
+        return False
+    try:
+        from sqlmodel import select
+        from agent.services.sqlmodel_session import async_session
+        from models.sql_models import ChatLogs
+
+        async with async_session() as session:
+            row = (await session.execute(
+                select(ChatLogs.graph_output, ChatLogs.chart_output)
+                .where(ChatLogs.session_id == session_id)
+                .order_by(ChatLogs.created_at.desc()).limit(1))).first()
+        return bool(row and (row[0] or row[1]))
+    except Exception as e:
+        logger.warning(f"[graph_agent] previous chart lookup failed: {e}")
+        return False
+
+
 @track_time("Node: Graph Agent Bridge")
 async def graph_agent_node(parent_state: AgentState) -> AgentState:
     db_results = parent_state.get("db_result") or []
@@ -116,6 +157,11 @@ async def graph_agent_node(parent_state: AgentState) -> AgentState:
 
     from chart_agent.graph import graph_agent_graph
     subgraph_state = agentstate_to_graphagentstate(parent_state, csv_path)
+    inherited = chart_follow_up_question(
+        parent_state, await previous_answer_had_chart(parent_state.get("session_id")))
+    if inherited:
+        logger.info("[graph_agent] follow-up keeps the previous chart | question=%s", inherited[:200])
+        subgraph_state["question"] = inherited
 
     # ----------------------------------------------------------------------
     # Inject chart_agent node configuration overrides (model + prompt)

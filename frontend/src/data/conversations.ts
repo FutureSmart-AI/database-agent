@@ -346,3 +346,35 @@ export function useFeedback(agentId: string | undefined) {
     },
   });
 }
+
+export type ReportCategory =
+  "wrong_answer" | "wrong_chart" | "lost_context" | "error" | "slow" | "other";
+
+/**
+ * `POST /nl2sql/api/v1/agents/{agent_id}/reports` — report a problem with one
+ * answer. Only the person who asked can; the service snapshots the
+ * conversation up to that answer and returns the report id.
+ */
+export function useReportAnswer(agentId: string | undefined) {
+  return useMutation({
+    mutationFn: async (input: {
+      sessionId: string;
+      chatId: string;
+      category: ReportCategory;
+      note: string;
+      expected?: string;
+    }) => {
+      const response = await axios.post<{ report_id: string; status: string }>(
+        buildApiUrl(APIS.NL2SQL_REPORTS, { service_id: agentId as string }),
+        {
+          session_id: input.sessionId,
+          chat_id: input.chatId,
+          category: input.category,
+          note: input.note.trim(),
+          expected: input.expected?.trim() || null,
+        },
+      );
+      return response.data;
+    },
+  });
+}

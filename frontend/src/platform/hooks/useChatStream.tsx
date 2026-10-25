@@ -354,6 +354,8 @@ export const useChatStream = (transport: ChatStreamTransport) => {
      */
     let traceId: string | null = null;
     let isAnswered: boolean | null = null;
+    /** The run's latency, tokens and estimated cost, from the same final event. */
+    let usage: unknown = null;
     let answeredSessionForTurn: string | null = null;
     /** The thread this answer belongs to, for the reconcile below. */
     let answeredSessionId: string | null = payload?.session_id || null;
@@ -387,6 +389,7 @@ export const useChatStream = (transport: ChatStreamTransport) => {
               chat_id: currentChatId,
               trace_id: traceId,
               is_answered: isAnswered,
+              usage,
               session_id: answeredSessionForTurn,
               data: mergedData,
             };
@@ -445,6 +448,7 @@ export const useChatStream = (transport: ChatStreamTransport) => {
           }
           if (!isNil(debug_info)) debugInfoContent = debug_info;
           if (!isNil(event.trace_id)) traceId = event.trace_id;
+          if (!isNil(event.usage)) usage = event.usage;
           if (!isNil(session_id)) answeredSessionForTurn = session_id;
           if (typeof event.is_answered === "boolean") {
             isAnswered = event.is_answered;
@@ -508,6 +512,7 @@ export const useChatStream = (transport: ChatStreamTransport) => {
               chat_id: currentChatId ?? "",
               trace_id: traceId,
               is_answered: isAnswered,
+              usage,
               session_id: answeredSessionForTurn,
               data: mergedData,
             };

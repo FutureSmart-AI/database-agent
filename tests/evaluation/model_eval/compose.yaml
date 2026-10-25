@@ -1,0 +1,47 @@
+# Overlay for the model evaluation. Use it on top of the root compose.yaml:
+#   docker compose -f compose.yaml -f tests/evaluation/model_eval/compose.yaml ...
+# Paths are relative to the repository root (the first file's directory).
+# MODEL_EVAL_CONFIG selects tests/evaluation/model_eval/configs/<name>.json for the API.
+x-tracing: &tracing
+  LANGSMITH_API_KEY: ${LANGSMITH_API_KEY:-}
+  LANGCHAIN_API_KEY: ${LANGSMITH_API_KEY:-}
+  LANGCHAIN_TRACING_V2: ${MODEL_EVAL_TRACING:-true}
+  LANGSMITH_TRACING: ${MODEL_EVAL_TRACING:-true}
+services:
+  api:
+    environment:
+      <<: *tracing
+      MODEL_CONFIG_PATH: /tests/evaluation/model_eval/configs/${MODEL_EVAL_CONFIG:-recommended-v1}.json
+      LANGCHAIN_PROJECT: database-agent-model-eval-server
+    volumes:
+      - ./tests:/tests:ro
+  eval-db:
+    image: postgres:16.6-alpine
+    profiles: [eval]
+    environment:
+      POSTGRES_USER: eval_admin
+      POSTGRES_PASSWORD: synthetic-eval-only
+      POSTGRES_DB: postgres
+    healthcheck:
+      test: [CMD-SHELL, pg_isready -U eval_admin -d postgres]
+      interval: 3s
+      timeout: 3s
+      retries: 20
+  model-eval:
+    image: database-agent-local:dev
+    profiles: [eval]
+    env_file: .env
+    environment:
+      <<: *tracing
+      ENV_FILE: /app/.env
+      OPENAI_API_KEY: ${OPENAI_API_KEY:-}
+      LANGCHAIN_PROJECT: database-agent-model-eval
+      MODEL_EVAL_OUT: /results
+      GITHUB_SHA: ${GITHUB_SHA:-}
+    volumes:
+      - ./.env:/app/.env:ro
+      - ./tests:/tests:ro
+      - ./deploy:/deploy:ro
+      - ./model-eval-results:/results
+    entrypoint: [python, /tests/evaluation/model_eval/run.py]
+    command: []

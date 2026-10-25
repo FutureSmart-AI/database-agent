@@ -95,7 +95,13 @@ def _resolve_owner(auth: dict, owner_id: str) -> str:
     # exceptions) and the credential lookup matches exactly. A caller passing
     # OWNER@EXAMPLE.COM would otherwise create a second row that no query ever finds, and
     # the owner would silently fall back to the platform key.
-    return (owner_id or "").strip().lower()
+    resolved = (owner_id or "").strip().lower()
+    # A browser session acts only on its own keys. Without this a signed-in user could
+    # name any other owner's email and add, list or remove that owner's provider keys.
+    # Master-key callers (service-to-service) still name the owner explicitly.
+    if auth.get("auth_type") == "session" and resolved != (auth.get("user_id") or "").strip().lower():
+        raise HTTPException(status_code=403, detail="A session may only manage its own credentials")
+    return resolved
 
 
 def _require_master_key(auth: dict) -> None:

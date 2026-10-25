@@ -524,3 +524,188 @@ original phase. Private Git history and operator evidence are excluded; private
 repository CI links are replaced by unlinked historical identifiers. No original
 research verdict, application behavior, runtime result or deployment changed.
 See the [publication notes](../publication.md) and root LICENSE/NOTICE.
+
+## DA-014 — Hosted bring-your-own-key without silent platform fallback (2026-10-22 IST)
+
+Released to the hosted service. On the hosted deployment several operations — table
+selection, setup descriptions, chart post-processing and embeddings — built provider
+clients without the owner's key and used the platform key, and a missing or unreadable
+owner key fell back to it silently. Each owner now has an explicit key source: `own`
+uses only the owner's stored keys and returns a clear, coded error otherwise; `platform`
+keeps the previous behaviour, which standalone installations and existing hosted owners
+retain. Browser sessions can now manage only their own credentials.
+
+A legacy data shape surfaced during release review: every recently used hosted agent
+stored table visibility as integers, which the strict access policy rejects. A one-time
+migration stores exact 1/0 values as booleans; malformed or empty maps still fail closed.
+
+Verified on the hosted service with the existing user, a new agent, a temporary
+inference-scoped key and a read-only synthetic fixture: setup without a key failed
+clearly; with the key, setup, SQL, two complete rows (South 200, North 250), a chart and a
+saved-conversation reopen succeeded, attributed only to that key; after the key was
+removed in the UI the next question failed with the missing-key message before any model
+call or SQL. Temporary resources were removed. Hosted UI copy that still describes
+platform fallback is a known follow-up. All historical verdicts are unchanged.
+
+## DA-015 — First questions are not refused by a default business template; an identifier is not a chart series (2026-10-23 IST)
+
+Released to the hosted service. The 2026-10-22 landing-page audit found two first-impression
+defects on a synthetic shop database.
+
+A new agent's first "top five customers by total spend" question was sometimes refused, and
+its follow-up was refused too. Every agent created without a `template_id`, including every
+agent created from the hosted UI, received the SaaS founder template, whose rules say a
+customer counts only with a live, paid subscription and a successful payment. A shop database
+has neither. On the production prompt and model, 40 fresh first questions per arm, the template
+refused 6 of 40 and no template 0 of 40; every refusal reason cited those rules. New agents now
+get no template unless the creator chooses one. A refused turn keeps its question in the
+conversation history but no longer its refusal text, which had led the next turn to refuse
+again. The model's refusal reason is now logged.
+
+A bar chart of the same five customers became a stacked chart split by surname. The chart check
+counted the selected customer `id` as a second measure. The mapping model now names the plotted
+measures and the label columns, the check counts only those measures, and a first and last name
+become one label.
+
+Source connections now always use the stored port. Table listing, column listing, the documented
+table-description upload and the column profiler had connected to the engine's default port, so a
+PostgreSQL database on 5434 failed them.
+
+Verified on the hosted service with a new agent created without a template on a read-only
+synthetic fixture: no business instruction stored for the agent; 15 of 15 fresh first questions
+answered with the exact five rows; an unsupported subscription-revenue question was refused, the
+reason logged, and the next supported question in the same conversation answered. The chart
+behaviour was verified with the real models on the merged code (a bar chart with full-name labels,
+and a two-measure control that still stacks). Existing agents that already store the template
+are unchanged. All historical verdicts are unchanged.
+
+## DA-016 — Try Database Agent on sample data, without a key or a database (2026-10-23 IST)
+
+Released to the hosted service. A signed-in user now sees "Try with sample data" on the home
+screen and can ask a shared agent about Cedar Lane, a synthetic online shop with a year of
+customers, orders, payments and returns, without adding an OpenAI key or connecting a database.
+
+Each person gets 5 free questions per rolling 24 hours and 20 in total, and all free questions
+together stop at a monthly spending budget. A question is counted before it runs, so questions
+sent at the same time cannot exceed the allowance: on the hosted service four questions sent at
+once with three left ran three and refused the fourth. When the free questions are used up, the
+screen says why and links to adding your own key, connecting your own database, or running
+Database Agent yourself. Anyone other than its owner can only ask the sample agent questions;
+attempts to change its settings, database, keys or collaborators, or to read other users'
+questions, are refused.
+
+The database and its answers are reproducible: a seeded generator builds it, and each suggested
+question has a reference answer computed twice, in Python and in SQL. On the hosted service the
+suggested questions returned the reference rows, the bar chart of the top five customers showed
+one bar per customer with full names, and a follow-up narrowed it to the top two.
+
+Two problems found during verification were fixed or recorded. Descriptions written while the
+automatic description job was still running were overwritten by it, which made the agent pick
+its own definitions of revenue and return rate; the sample agent's definitions are now written
+after the job and checked. The hosted service has not recorded per-question cost since
+2026-10-02, so spend is estimated from recorded tokens at the product's blended rate (about
+$0.028 per sample-data question).
+
+## DA-017 — Sample data ready for researcher feedback (2026-10-23 IST)
+
+Released to the hosted service. Each person now gets 20 free sample-data questions per rolling
+24 hours and 100 in total. People signed in with a verified aidemos.com or futuresmart.ai email
+have no limit, so the team can test without resets; their questions are still recorded, but kept
+apart from public usage and out of the $150 monthly budget, so both costs can be read separately.
+
+Every answer has "Report a problem": say what went wrong and what you expected, and the service
+attaches the conversation up to that answer (each question, the SQL, the rows and the chart). The
+person gets a report id to quote.
+
+Fixed along the way, each checked on the hosted service:
+
+- Descriptions written right after adding a database were overwritten by the automatic
+  description job; they are now kept (reproduced on the old release, gone on the new one).
+- The header said "0 tables" for every agent; it now counts the tables the agent may read.
+- Picking a suggested question puts the cursor in the box, so Enter sends it.
+- Answers now read the business definitions, so amounts come out in dollars instead of
+  "the result does not specify a currency"; 8 of 8 reference questions matched.
+- A follow-up like "Only show the top two." after a chart now keeps the chart (3 of 3 runs,
+  previously 0 of 3).
+- On the shared sample agent, a visitor's thumbs-down no longer rewrites the stored SQL of their
+  answer.
+- The API was killed for running out of memory at 512 MB under a description job and questions
+  together; it now has 1 GB.
+
+Still open: questions take 13 to 50 seconds, and the shared database cluster is at its 1 ACU
+ceiling every hour (a capacity decision is pending).
+
+## DA-018 — Saved conversations stay on their agent and under its answer settings (2026-10-23 IST)
+
+Released to the hosted service. Each agent now only ever sees its own turns of a conversation.
+Before, chat history was read by conversation id alone: someone allowed to use one agent could
+pass another agent's conversation id and have that agent's questions and answers replayed into
+this agent's model context. A conversation created on another agent is now refused before the
+question is charged, any history is read or a model is called. An id the API never created —
+the FutureSmart chat service sends its own thread id to every agent it calls — keeps working,
+with only this agent's turns as context.
+
+Hiding the SQL or the result rows in Settings now also hides them when a saved conversation is
+reopened through the API, not only in the live answer, and the CSV download is refused for an
+agent that hides rows. An agent key can no longer download another agent's results or change
+the feedback on another agent's answers.
+
+Verified on the hosted service with two temporary agents on the synthetic Cedar Lane data, one
+showing SQL and rows and one hiding them: 30 of 30 checks, including the refusal in under a
+second with nothing written to the other conversation, a shared chat-service thread where the
+second agent read none of the first agent's turns, replays and downloads following each agent's
+settings, the MCP server journey, and the free sample-data agent answering and reopening as
+before. The same change is in the public repository.
+
+Found during verification: setting up two agents at once while a question ran exhausted the
+API's 1 GB of memory and the service restarted (about three minutes of errors); recorded as
+DA-MEM-002. The hosted master key had been committed to the chat service repository; it was
+rotated the same evening (DA-SEC-001).
+
+## DA-019 — The public API lives at futuresmart.ai/database-agent/api (2026-10-24 IST)
+
+The hosted API's canonical public root is now https://futuresmart.ai/database-agent/api,
+under the FutureSmart AI site rather than an application subdomain. It is the same
+service: the futuresmart.ai web server forwards the path to the existing /nl2sql/api
+routes, which keep working unchanged at https://app.futuresmart.ai/nl2sql/api. The API
+reference at /docs works at both roots and its "Try it out" calls the public root. The
+Share page's API examples, the landing page samples and the public repository's API and
+MCP documentation name the new root, and the landing page's integration section now
+includes the MCP server. The hosted application pages are marked noindex so they do not
+compete with the product landing page.
+
+Verified on the hosted service with temporary synthetic agents through the new root: the
+production journey (answers, follow-ups, session isolation, replay settings, CSV export,
+key scope, MCP tools), streamed answers arriving unbuffered, exact forwarding of encoded
+paths, and the same conversation replayed through the old root.
+
+## DA-020 — Model evaluation through the real API, and per-answer latency and cost (2026-10-25 IST)
+
+A repeatable model evaluation now lives in `tests/evaluation/model_eval`. It asks 18 questions
+over two synthetic databases — the Cedar Lane sample database with its reference answers, and
+a new, structurally different clinic schema — through the product's own chat API with the
+real model pipeline, and grades every answer against ground truth computed twice (Python over
+the generated rows, and reference SQL on the loaded database). A judge model compares the
+returned rows and prose with that ground truth; a mechanical row comparison, SQL validity on
+the read-only role, latency, estimated cost and the models actually used are recorded beside
+it. Each run is a LangSmith experiment over a versioned dataset. The **Model evaluation**
+workflow runs it weekly and on demand on the existing Compose stack.
+
+Every chat answer now carries `usage`: the agent's processing time, tokens, and a list-price
+cost estimate per pipeline step from a dated price table. Totals come from a run-level count
+of every model call, so a call no step records itself still appears (`other_calls`); an
+unpriced model makes the cost incomplete instead of free. The same per-step estimates are
+stored with each Agent Health event, and the conversation's Full logs panel shows them.
+
+First experiment (two runs, four answers per question and configuration): the shipped
+configuration answered 70 of 72 correctly; moving table selection, database routing, SQL
+generation and pandas planning from gpt-6.1-sol to gpt-6-luna answered 65 of 72, at about
+one seventh of the estimated cost ($0.0007 vs $0.0047 per answer) and about a second faster
+at the median. The cheaper configuration failed where two grains must be aggregated before
+they are joined (clinician utilisation, 0 of 4) and where "seen" had to be read as
+"attended" (1 of 4). The shipped model failed once in two by adding `LIMIT 10` to a
+twelve-month question; it ended 17 of 36 queries with that limit against the prompt's rule
+(DA-LIMIT-001). The evaluation also showed that table selection — 35% of the shipped
+configuration's cost — had been missing from cost reporting; it is now counted.
+No production model was changed. Evidence: `docs/improvements/evidence/2026-10-25-model-evaluation.json`.
+

@@ -32,6 +32,10 @@ class OwnerConfigResponse(BaseModel):
     tier_type: str
     base_tier: Optional[str] = None
     platform_limits: PlatformLimits
+    # Whose provider keys pay for this owner's model calls: "own" (bring-your-own-key; a
+    # missing or invalid key is an error) or "platform". Always the EFFECTIVE value — the
+    # deployment default when the owner has no stored choice.
+    provider_key_source: Literal["own", "platform"] = "platform"
     # No "is this service enabled" field. The usage service has `enabled_services` because
     # it answers for six services, and the dashboard reads it from there. Here it could
     # only ever describe NL2SQL itself — and by the time a request reaches this service the
@@ -52,6 +56,8 @@ class OwnerConfigUpdate(BaseModel):
     tier_type: Optional[Literal["trial", "payg", "custom"]] = None
     base_tier: Optional[Literal["trial", "payg"]] = None
     platform_limits: Optional[PlatformLimits] = None
+    # Master key only, like every write here: who pays for model calls is a commercial term.
+    provider_key_source: Optional[Literal["own", "platform"]] = None
 
     model_config = ConfigDict(json_schema_extra={
         "example": {"tier_type": "payg",

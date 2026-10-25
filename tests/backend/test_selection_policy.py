@@ -1,6 +1,6 @@
 """Actual selector/node/REST bodies with synthetic boundaries; no external calls."""
 import asyncio
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 import importlib.util
 import json
 import re
@@ -40,7 +40,8 @@ class SelectionPolicyTests(unittest.IsolatedAsyncioTestCase):
         self.selector = load_function('agent/nodes/select_table_and_fewshots.py', 'node_select_and_fewshots',
             ModelConfigurationError=ModelConfigurationError, asyncio=asyncio, select_tables=self.select, get_agent_node_config=self.config,
             get_few_shot_service=self.fewshots, build_few_shot_examples_string=lambda value: value,
-            get_table_descriptions_and_selected_tables=self.introspect)
+            get_table_descriptions_and_selected_tables=self.introspect,
+            measure_node_calls=lambda *args: nullcontext())
 
     async def run_selector(self, response=None, *, descriptions=DESCRIPTIONS,
                            selected=None, metadata_description=None):
@@ -229,12 +230,16 @@ class SelectionPolicyTests(unittest.IsolatedAsyncioTestCase):
             JSONResponse=JSONResponse, uuid=uuid, asyncio=asyncio,
             get_agent_with_visibility=AsyncMock(return_value=(object(), True, True, True)),
             apply_agent_answer_settings=lambda *args: {}, get_owner_email_by_agent_id=AsyncMock(return_value='synthetic'),
-            enforce_query_cap=AsyncMock(), ensure_session_belongs_to_agent=AsyncMock(),
+            enforce_query_cap=AsyncMock(), demo_question_user=lambda *args: None,
+            reserve_demo_question_or_refuse=AsyncMock(), close_demo_question=AsyncMock(),
+            ensure_session_belongs_to_agent=AsyncMock(),
             get_past_messages_safe=AsyncMock(return_value={'past_messages': [], 'session_id': 'synthetic-session'}),
             get_agent_runtime_db=AsyncMock(return_value=({'db_id': 'synthetic-db'}, 0)),
             run_agent_flow=actual_node_pipeline, _generate_follow_up_safe=AsyncMock(return_value=None),
             maybe_upload_csv_export=AsyncMock(return_value=None), persist_chat_logs=AsyncMock(),
-            persist_health_event=AsyncMock(), build_chat_response=response_builder)
+            persist_health_event=AsyncMock(), build_chat_response=response_builder,
+            answer_usage=lambda *args: None, get_node_events=lambda result: [],
+            _owner_credential_error=AsyncMock(return_value=None))
         body = schemas.ChatRequest(query='orders by status bar chart', chart_output=True, debug_info=True, follow_up=False)
         for record, selected in [(policy_record(FLAGS), ['orders', 'order_status_history']),
                                  (policy_record(None), ['orders'])]:

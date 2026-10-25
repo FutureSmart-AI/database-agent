@@ -16,6 +16,7 @@ your indexing job to repopulate.
 import asyncio
 import logging
 import os
+import threading
 from contextvars import ContextVar
 from typing import List, Dict, Any, Tuple, Optional
 
@@ -55,6 +56,11 @@ _COLLECTION_NAME = os.getenv("HC_QDRANT_COLLECTION_NAME", "high-cardinality-valu
 _UPSERT_MAX_ATTEMPTS = int(os.getenv("HC_UPSERT_MAX_ATTEMPTS", "3"))
 _UPSERT_RETRY_BASE_DELAY = float(os.getenv("HC_UPSERT_RETRY_BASE_DELAY", "1.0"))
 
+# Values embedded and upserted per step. A dense vector is held as Python floats (about 75 KB
+# per value at 3072 dimensions), so a whole column at once grew with the column: 10k values
+# ~0.7 GB in one job. Chunking bounds a job's vectors to this many values (DA-MEM-002).
+_INDEX_CHUNK_SIZE = max(1, int(os.getenv("HC_INDEX_CHUNK_SIZE", "256")))
+
 # Minimum cosine similarity for dense matches — below this, the result is treated
 # as a semantic false-positive and dropped before RRF fusion. Tune higher for
 # stricter retrieval (fewer cross-domain leaks), lower for broader recall.
@@ -75,21 +81,26 @@ _SPARSE_NAME = "sparse"
 # Sparse encoder (BM25 via fastembed) — lazy singleton
 # ──────────────────────────────────────────────────────────────────────────────
 _sparse_encoder = None
+# Encoding runs in worker threads, so the first load is guarded: one model per process,
+# never one per concurrent caller (DA-MEM-002).
+_sparse_encoder_lock = threading.Lock()
 
 
 def _get_sparse_encoder():
     """Lazy-load BM25 sparse encoder. Requires `pip install fastembed`."""
     global _sparse_encoder
     if _sparse_encoder is None:
-        try:
-            from fastembed import SparseTextEmbedding
-        except ImportError as e:
-            raise RuntimeError(
-                "HC hybrid search needs fastembed for sparse BM25 encoding. "
-                "Install with: pip install fastembed"
-            ) from e
-        _sparse_encoder = SparseTextEmbedding(model_name=_SPARSE_MODEL)
-        logger.info(f"[HC] Loaded sparse encoder: {_SPARSE_MODEL}")
+        with _sparse_encoder_lock:
+            if _sparse_encoder is None:
+                try:
+                    from fastembed import SparseTextEmbedding
+                except ImportError as e:
+                    raise RuntimeError(
+                        "HC hybrid search needs fastembed for sparse BM25 encoding. "
+                        "Install with: pip install fastembed"
+                    ) from e
+                _sparse_encoder = SparseTextEmbedding(model_name=_SPARSE_MODEL)
+                logger.info(f"[HC] Loaded sparse encoder: {_SPARSE_MODEL}")
     return _sparse_encoder
 
 
@@ -128,8 +139,10 @@ class QdrantCardinalityStore:
         )
 
     def _make_embedding_fn(self, api_key: Optional[str] = None) -> OpenAIEmbeddings:
-        """Build a dense embedder. Priority: explicit arg → context var → env var."""
-        key = api_key or _embedding_api_key_var.get() or OPENAI_API_KEY
+        """Build a dense embedder. Priority: explicit arg → context var → owner key policy
+        (the bound owner's key on bring-your-own-key, else the environment key)."""
+        from agent.utils.provider_key_scope import env_key_for
+        key = api_key or _embedding_api_key_var.get() or env_key_for("openai", "OPENAI_API_KEY")
         if not key:
             raise ModelConfigurationError("Missing OPENAI_API_KEY for high-cardinality embeddings")
         return OpenAIEmbeddings(model=self._embedding_model, api_key=key)
@@ -188,60 +201,64 @@ class QdrantCardinalityStore:
             )
 
             emb_fn = self._make_embedding_fn(api_key)
-            dense_vectors = await emb_fn.aembed_documents(values)
-            # BM25 encoding is CPU-bound and sync — for large batches, callers
-            # can wrap this method in asyncio.to_thread. Keeping it inline here
-            # keeps the storage path simple and matches typical batch sizes.
-            sparse_vectors = _encode_sparse_batch(values)
-
-            points: List[PointStruct] = []
-            for value, dense_vec, sparse_vec in zip(values, dense_vectors, sparse_vectors):
-                _db_id = metadata.get("db_id")
-                _id_seed = (
-                    f"{_db_id}_{metadata['table']}_{metadata['column']}_{value}"
-                    if _db_id is not None
-                    else f"{metadata['table']}_{metadata['column']}_{value}"
-                )
-                point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, _id_seed))
-                payload = {
-                    "value": value,
-                    "table": metadata["table"],
-                    "column": metadata["column"],
-                }
-                if metadata.get("db_id") is not None:
-                    payload["db_id"] = metadata["db_id"]
-                points.append(PointStruct(
-                    id=point_id,
-                    vector={
-                        _DENSE_NAME: dense_vec,
-                        _SPARSE_NAME: sparse_vec,
-                    },
-                    payload=payload,
-                ))
-
+            upserted = 0
             batch_size = 50
-            for i in range(0, len(points), batch_size):
-                batch = points[i : i + batch_size]
-                for attempt in range(1, _UPSERT_MAX_ATTEMPTS + 1):
-                    try:
-                        await self.client.upsert(
-                            collection_name=self.collection_name,
-                            points=batch,
-                        )
-                        break
-                    except Exception as e:
-                        if attempt == _UPSERT_MAX_ATTEMPTS:
-                            raise
-                        delay = _UPSERT_RETRY_BASE_DELAY * (2 ** (attempt - 1))
-                        logger.warning(
-                            f"[HC] Upsert batch {i // batch_size + 1} for "
-                            f"{metadata['table']}.{metadata['column']} failed "
-                            f"(attempt {attempt}/{_UPSERT_MAX_ATTEMPTS}): "
-                            f"{type(e).__name__}: {e}. Retrying in {delay:.1f}s"
-                        )
-                        await asyncio.sleep(delay)
+            for start in range(0, len(values), _INDEX_CHUNK_SIZE):
+                chunk = values[start : start + _INDEX_CHUNK_SIZE]
+                dense_vectors = await emb_fn.aembed_documents(chunk)
+                # BM25 encoding is CPU-bound and sync: a worker thread keeps chat requests and
+                # health checks served while a large column is encoded.
+                sparse_vectors = await asyncio.to_thread(_encode_sparse_batch, chunk)
+
+                points: List[PointStruct] = []
+                for value, dense_vec, sparse_vec in zip(chunk, dense_vectors, sparse_vectors):
+                    _db_id = metadata.get("db_id")
+                    _id_seed = (
+                        f"{_db_id}_{metadata['table']}_{metadata['column']}_{value}"
+                        if _db_id is not None
+                        else f"{metadata['table']}_{metadata['column']}_{value}"
+                    )
+                    point_id = str(uuid.uuid5(uuid.NAMESPACE_DNS, _id_seed))
+                    payload = {
+                        "value": value,
+                        "table": metadata["table"],
+                        "column": metadata["column"],
+                    }
+                    if metadata.get("db_id") is not None:
+                        payload["db_id"] = metadata["db_id"]
+                    points.append(PointStruct(
+                        id=point_id,
+                        vector={
+                            _DENSE_NAME: dense_vec,
+                            _SPARSE_NAME: sparse_vec,
+                        },
+                        payload=payload,
+                    ))
+
+                for i in range(0, len(points), batch_size):
+                    batch = points[i : i + batch_size]
+                    for attempt in range(1, _UPSERT_MAX_ATTEMPTS + 1):
+                        try:
+                            await self.client.upsert(
+                                collection_name=self.collection_name,
+                                points=batch,
+                            )
+                            break
+                        except Exception as e:
+                            if attempt == _UPSERT_MAX_ATTEMPTS:
+                                raise
+                            delay = _UPSERT_RETRY_BASE_DELAY * (2 ** (attempt - 1))
+                            logger.warning(
+                                f"[HC] Upsert batch {i // batch_size + 1} for "
+                                f"{metadata['table']}.{metadata['column']} failed "
+                                f"(attempt {attempt}/{_UPSERT_MAX_ATTEMPTS}): "
+                                f"{type(e).__name__}: {e}. Retrying in {delay:.1f}s"
+                            )
+                            await asyncio.sleep(delay)
+                upserted += len(points)
+                del dense_vectors, sparse_vectors, points
             logger.info(
-                f"[HC] Upserted {len(points)} hybrid points for {metadata['table']}.{metadata['column']}"
+                f"[HC] Upserted {upserted} hybrid points for {metadata['table']}.{metadata['column']}"
             )
             return True
         except Exception as e:

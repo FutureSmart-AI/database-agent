@@ -21,6 +21,7 @@ from starlette.requests import Request
 from sqlmodel import select
 
 from agent.utils.authorization import require_agent_permission
+from agent.utils.heavy_work_gate import heavy_work
 from agent.utils.hc_column_profiler import (
     HIGH_CARDINALITY_TEXT_SEARCH,
     ProfilingConfig,
@@ -98,45 +99,52 @@ async def run_hc_profile_for_agent(
         }
     )
 
-    table_names: Optional[List[str]] = body.tables or None
-    logger.info(f"[HC Profile] Step 4/5: running profiler (tables={table_names or 'all'})")
-    profiles_by_table: Dict[str, dict] = await asyncio.to_thread(
-        profile_all_tables, db_details, config, table_names
-    )
-    logger.info(f"[HC Profile] Profiling complete: {len(profiles_by_table)} tables. Persisting...")
-
-    failed_tables = []
-    for table_name, profiles in profiles_by_table.items():
-        result = await save_hc_column_profiles(agent_id, table_name, profiles, db_id=db_id)
-        if not result.get("status"):
-            failed_tables.append(table_name)
-            logger.error(f"[HC Profile] Failed to persist profiles for table '{table_name}': {result.get('message')}")
-
-    if failed_tables:
-        raise HTTPException(
-            status_code=500,
-            detail="Profiling completed but failed to persist results. Please try again.",
+    # One heavy setup section at a time per process: the profiler, the DISTINCT reads and the
+    # embedding of HC values hold whole columns in memory (DA-MEM-002).
+    async with heavy_work(f"hc-profile agent={agent_id} db={db_id}"):
+        table_names: Optional[List[str]] = body.tables or None
+        logger.info(f"[HC Profile] Step 4/5: running profiler (tables={table_names or 'all'})")
+        profiles_by_table: Dict[str, dict] = await asyncio.to_thread(
+            profile_all_tables, db_details, config, table_names
         )
-    logger.info(f"[HC Profile] Step 5/5: profiles persisted for {len(profiles_by_table)} tables")
+        logger.info(f"[HC Profile] Profiling complete: {len(profiles_by_table)} tables. Persisting...")
 
-    classification_counts: Dict[str, int] = {}
-    total_columns = 0
-    for profiles in profiles_by_table.values():
-        for col_profile in profiles.values():
-            label = col_profile.get("classification", "NORMAL_COLUMN")
-            classification_counts[label] = classification_counts.get(label, 0) + 1
-            total_columns += 1
+        failed_tables = []
+        for table_name, profiles in profiles_by_table.items():
+            result = await save_hc_column_profiles(agent_id, table_name, profiles, db_id=db_id)
+            if not result.get("status"):
+                failed_tables.append(table_name)
+                logger.error(f"[HC Profile] Failed to persist profiles for table '{table_name}': {result.get('message')}")
 
-    hc_registered: List[Dict] = []
-    if body.auto_register_hc:
-        try:
-            hc_registered = await _auto_register_hc_columns(
-                agent_id, user_id, db_details, profiles_by_table, db_id=db_id
+        if failed_tables:
+            raise HTTPException(
+                status_code=500,
+                detail="Profiling completed but failed to persist results. Please try again.",
             )
-        except Exception as e:
-            logger.warning(
-                f"[HC Profile] Auto-registration of HC columns failed (non-blocking): {e}"
-            )
+        logger.info(f"[HC Profile] Step 5/5: profiles persisted for {len(profiles_by_table)} tables")
+
+        classification_counts: Dict[str, int] = {}
+        total_columns = 0
+        for profiles in profiles_by_table.values():
+            for col_profile in profiles.values():
+                label = col_profile.get("classification", "NORMAL_COLUMN")
+                classification_counts[label] = classification_counts.get(label, 0) + 1
+                total_columns += 1
+
+        hc_registered: List[Dict] = []
+        if body.auto_register_hc:
+            try:
+                # Indexing embeds the column values: paid for by the agent owner's key policy,
+                # not by whoever happens to run setup and not silently by the platform.
+                from agent.utils.provider_key_scope import owner_key_scope
+                async with owner_key_scope(getattr(agent, "owner_id", None)):
+                    hc_registered = await _auto_register_hc_columns(
+                        agent_id, user_id, db_details, profiles_by_table, db_id=db_id
+                    )
+            except Exception as e:
+                logger.warning(
+                    f"[HC Profile] Auto-registration of HC columns failed (non-blocking): {e}"
+                )
 
     return {
         "status": "success",
@@ -176,8 +184,10 @@ async def _auto_register_hc_columns(
     qdrant_loaded: List[Tuple[str, str]] = []
     try:
         for table_name, col_name in hc_pairs:
-            unique_values_dict = table_description_db_utils.get_unique_values_for_columns(
-                {"db_details": db_details}, table_name, [col_name]
+            # A blocking driver read: off the event loop so chat requests keep being served.
+            unique_values_dict = await asyncio.to_thread(
+                table_description_db_utils.get_unique_values_for_columns,
+                {"db_details": db_details}, table_name, [col_name],
             )
             values = [str(v) for v in unique_values_dict.get(col_name, []) if v is not None]
             if values:

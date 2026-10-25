@@ -12,6 +12,7 @@ from starlette.requests import Request
 from chatbot_management.utils.api_validation import get_api_key_or_session
 from chatbot_management.services.logger import logger
 from agent.utils.authorization import require_agent_permission
+from agent.utils.model_profiles import ProviderCredentialError
 
 from api.v1.schemas.tables import SingleTableVisibilityRequest, SingleTableUpdateRequest, DeleteTablesRequest
 from api.v1.schemas.columns import BulkColumnDescriptionsRequest, SingleColumnDescriptionRequest
@@ -186,6 +187,8 @@ async def db_generate_one_table_description(
         return await generate_single_table_description(agent_id, db_id, table_name)
     except HTTPException:
         raise
+    except ProviderCredentialError as e:
+        raise HTTPException(status_code=400, detail={"code": e.code, "message": str(e)})
     except Exception as e:
         logger.error(f"Error generating description for table {table_name} in db {db_id}: {e}")
         traceback.print_exc()

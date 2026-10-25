@@ -33,17 +33,17 @@ uses the signed HTTP-only session cookie; no hosted Auth service is required.
 | `GET /v1/agents/{id}/sessions` | Saved conversations on the agent |
 | `GET /v1/agents/{id}/sessions/{session_id}` | A saved conversation, each answer with its SQL, `result` rows and chart |
 
-An agent only ever sees its own turns of a conversation: chat history and replays
-are read for that agent alone. A `session_id` this API created for another agent
-returns HTTP404 before any history is read or a model is called; a `session_id`
-the API did not create (for example a chat service's own thread id) continues
-with this agent's turns only.
+An agent only ever sees its own turns of a conversation: chat history and replays are read
+for that agent alone. A `session_id` this API created for another agent returns HTTP404
+before the question is charged, any history is read or a model is called. A `session_id`
+the API did not create (for example a chat service's own thread id) continues with this
+agent's turns only. Omit it to start a new conversation.
 
-`show_sql_query` and `show_db_result` apply to saved conversations exactly as to
-live answers: a replay leaves out the SQL and the rows (`debug_info.db_output`
-and `result`) the agent hides, and `GET /v1/sessions/{session_id}/export` returns
-HTTP403 for an agent that hides result rows; with an agent key it finds only that
-agent's turns. Both settings are read when the
+`show_sql_query` and `show_db_result` apply to saved conversations exactly as to live
+answers: a replay (`.../sessions/{session_id}` and `.../messages`) leaves out the SQL and
+the rows (`debug_info.db_output` and `result`) the agent hides, and
+`GET /v1/sessions/{session_id}/export` returns HTTP403 for an agent that hides result rows;
+with an agent key it finds only that agent's turns. Both settings are read when the
 conversation is served, so turning one back on shows the stored SQL or rows again.
 
 Use the generated OpenAPI contract for complete request/response fields and
@@ -57,7 +57,17 @@ Results may contain SQL, rows, answer/status, follow-ups, and optional chart
 payloads according to agent settings. Preserve numeric rows/units when consuming
 them. Released chart behavior and evidence are described in the improvement
 history; a successful SQL execution alone does not establish a rendered chart or an
-answerable question. Ordinary asynchronous setup/chat work belongs to this API;
+answerable question.
+
+Every answer (JSON response and the streaming `full_metadata` event) carries `usage`:
+`latency_ms` (the agent's processing time for the answer), `input_tokens`,
+`output_tokens`, `estimated_cost_usd`, `cost_complete`, `price_table` and `nodes` (per
+pipeline step: provider, model, tokens, cached input tokens, time and estimated cost).
+The cost is an estimate — recorded tokens times the dated list prices in
+`backend/model_profiles/prices.json` — not a provider bill; it is `cost_complete: false`
+when a model has no listed price, and follow-up suggestions are not included. Answer
+accuracy is measured separately against ground truth (`tests/evaluation/model_eval`);
+the API reports no per-answer confidence score. Ordinary asynchronous setup/chat work belongs to this API;
 there is no required shared orchestrator or separate core worker process.
 
 Invalid model configuration returns HTTP400 with `detail.code` equal to

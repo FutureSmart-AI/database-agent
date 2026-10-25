@@ -19,6 +19,7 @@ Routes:
 This module does NOT register itself with the application; registration is done
 by the caller.
 """
+import asyncio
 import json
 import traceback
 from typing import Any, Dict, List, Tuple
@@ -27,6 +28,7 @@ from fastapi import APIRouter, Body, Depends, HTTPException, Path
 from starlette.requests import Request
 
 from agent.utils.authorization import require_agent_permission
+from agent.utils.heavy_work_gate import heavy_work
 from agent.utils.high_cardinality_qdrant_utils import get_cardinality_store
 from chatbot_management.services.logger import logger
 from chatbot_management.utils.api_validation import get_api_key_or_session
@@ -167,39 +169,47 @@ async def set_high_cardinality_columns_for_db(
 
         # Step 1: index values into Qdrant (tagged with db_id)
         qdrant_loaded: List[Tuple[str, str]] = []
-        store = await get_cardinality_store()
-        try:
-            for table_name, column_names in table_columns_map.items():
-                for column_name in column_names:
-                    unique_values = table_description_db_utils.get_unique_values_for_columns(
-                        {"db_details": db_details}, table_name, [column_name]
-                    )
-                    values = [str(v) for v in unique_values.get(column_name, []) if v is not None]
-                    if values:
-                        await store.store_values(
-                            values=values,
-                            metadata={"table": table_name, "column": column_name, "db_id": db_id},
+        # Embedding the values is paid for by the agent owner's key policy.
+        from agent.utils.provider_key_scope import owner_key_scope
+        from chatbot_management.db_utils.bot_crud_db_utils import get_owner_email_by_agent_id
+        # Reading and embedding whole columns is heavy setup work: one section at a time per
+        # process, queued behind any running profiling job (DA-MEM-002).
+        async with owner_key_scope(await get_owner_email_by_agent_id(agent_id)), \
+                heavy_work(f"hc-register agent={agent_id} db={db_id}"):
+            store = await get_cardinality_store()
+            try:
+                for table_name, column_names in table_columns_map.items():
+                    for column_name in column_names:
+                        unique_values = await asyncio.to_thread(
+                            table_description_db_utils.get_unique_values_for_columns,
+                            {"db_details": db_details}, table_name, [column_name],
                         )
-                        qdrant_loaded.append((table_name, column_name))
-                        logger.info(
-                            f"Loaded {len(values)} values into Qdrant for {table_name}.{column_name} (db_id={db_id})"
-                        )
-        except Exception as qdrant_err:
-            logger.error(f"[HC] Vector DB indexing failed — aborting: {qdrant_err}")
-            for tbl, col in qdrant_loaded:
-                if (tbl, col) in new_pair_set:
-                    try:
-                        await store.delete_values_for_table_column(tbl, col, db_id=db_id)
-                    except Exception as rb_err:
-                        logger.warning(f"[HC] Rollback delete failed for {tbl}.{col}: {rb_err}")
-            raise HTTPException(
-                status_code=502,
-                detail={
-                    "error": "vector_db_failure",
-                    "message": "Failed to index column values in the vector database (Qdrant).",
-                    "vector_db_error": str(qdrant_err),
-                },
-            )
+                        values = [str(v) for v in unique_values.get(column_name, []) if v is not None]
+                        if values:
+                            await store.store_values(
+                                values=values,
+                                metadata={"table": table_name, "column": column_name, "db_id": db_id},
+                            )
+                            qdrant_loaded.append((table_name, column_name))
+                            logger.info(
+                                f"Loaded {len(values)} values into Qdrant for {table_name}.{column_name} (db_id={db_id})"
+                            )
+            except Exception as qdrant_err:
+                logger.error(f"[HC] Vector DB indexing failed — aborting: {qdrant_err}")
+                for tbl, col in qdrant_loaded:
+                    if (tbl, col) in new_pair_set:
+                        try:
+                            await store.delete_values_for_table_column(tbl, col, db_id=db_id)
+                        except Exception as rb_err:
+                            logger.warning(f"[HC] Rollback delete failed for {tbl}.{col}: {rb_err}")
+                raise HTTPException(
+                    status_code=502,
+                    detail={
+                        "error": "vector_db_failure",
+                        "message": "Failed to index column values in the vector database (Qdrant).",
+                        "vector_db_error": str(qdrant_err),
+                    },
+                )
 
         # Step 2: persist merged config in metadata DB
         try:

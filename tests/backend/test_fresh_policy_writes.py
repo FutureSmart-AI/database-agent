@@ -1,5 +1,5 @@
 """Complete setup/write/read/node bodies with synthetic ORM/source/provider boundaries."""
-from contextlib import ExitStack
+from contextlib import ExitStack, nullcontext
 from datetime import datetime
 import asyncio
 import json
@@ -80,7 +80,8 @@ class FreshPolicyWriteTests(unittest.IsolatedAsyncioTestCase):
             ModelConfigurationError=ModelConfigurationError, select_tables=selected,
             get_agent_node_config=AsyncMock(return_value=None),
             get_few_shot_service=AsyncMock(return_value=types.SimpleNamespace(get_similar_examples=examples)),
-            build_few_shot_examples_string=lambda value: value)
+            build_few_shot_examples_string=lambda value: value,
+            measure_node_calls=lambda *args: nullcontext())
         forbidden = Mock(side_effect=AssertionError('Excluded source/model work reached'))
         sql_gen = load_function('agent/nodes/sql_gen.py', 'node_sql_gen', get_agent_node_config=forbidden)
         execute = load_function('agent/nodes/sql_exec.py', 'node_sql_exec', try_exec_sql=forbidden)
@@ -138,16 +139,26 @@ class FreshPolicyWriteTests(unittest.IsolatedAsyncioTestCase):
         setter = AsyncMock()
         job = load_function('api/v1/utils/description_jobs_helper.py','_run_table_generation',
             asyncio=asyncio, _TABLE_GEN_CONCURRENCY=6,
-            _build_llm=lambda: types.SimpleNamespace(ainvoke=AsyncMock(return_value=types.SimpleNamespace(text='description'))),
+            _build_llm=AsyncMock(return_value=types.SimpleNamespace(ainvoke=AsyncMock(return_value=types.SimpleNamespace(text='description')))),
             _set_job=setter, _TABLE_PROMPT_INTRO='unchanged source prompt omitted at synthetic model boundary',
             response_text=response_text)
         parents = {name:types.ModuleType(name) for name in ('api','api.v1','api.v1.utils','knowledge','knowledge.db_utils')}
         for item in parents.values(): item.__path__=[]
+        # The job saves through the locked merge (DA-DESC-RACE-001); its merge rule is the
+        # real one, applied to the stored record, then written by the same metadata writer.
+        source = 'knowledge/db_utils/table_description_db_utils.py'
+        merge = load_function(source, 'merge_generated_descriptions',
+                              _description_map=load_function(source, '_description_map'))
+        async def save(agent_id, db_id, started, generated, tables):
+            description, flags = merge(self.record.description, self.record.entry_flags,
+                                       started, generated, tables)
+            return await self.write(None, agent_id, '', '', description, flags, db_id=db_id)
         with patch.dict(sys.modules,{**parents,
             'api.v1.utils.columns_helper':types.SimpleNamespace(get_table_columns_from_db=lambda *_: []),
             'api.v1.utils.tables_helper':types.SimpleNamespace(get_all_agent_table_descriptions=AsyncMock(return_value=rows)),
             'knowledge.db_utils.table_description_db_utils':types.SimpleNamespace(
-                get_table_names_from_db=lambda *_:['orders','order_status_history'], upload_to_db_table_description=self.write)}):
+                get_table_names_from_db=lambda *_:['orders','order_status_history'],
+                save_generated_table_descriptions=save)}):
             await job('synthetic-agent','synthetic-db','synthetic-job',{'db_name':'synthetic'},overwrite=True)
         self.assertEqual(self.record.entry_flags,{'orders':True,'order_status_history':False})
         self.assertTrue(all(type(v) is bool for v in self.record.entry_flags.values()))

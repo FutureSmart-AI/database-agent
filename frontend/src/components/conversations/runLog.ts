@@ -32,6 +32,8 @@ export interface RunLogCall {
   inputTokens?: number;
   outputTokens?: number;
   costUsd?: number;
+  /** The cost is the service's list-price estimate, not a billed amount. */
+  estimated?: boolean;
 }
 
 export type RunLogState = "done" | "failed" | "skipped" | "flagged";
@@ -51,7 +53,15 @@ export interface RunLogStep {
 export interface RunLog {
   steps: RunLogStep[];
   /** The run as a whole, when the turn reported timings or usage. */
-  totals?: { latencyMs?: number; totalTokens?: number; costUsd?: number };
+  totals?: {
+    latencyMs?: number;
+    totalTokens?: number;
+    costUsd?: number;
+    /** `costUsd` is the service's list-price estimate (NL2SQL `usage`). */
+    costEstimated?: boolean;
+    /** Some model in the run had no price, so no total is shown. */
+    costIncomplete?: boolean;
+  };
   /** The pipeline the service says it ran, e.g. `agentic_rag`. */
   runType?: string;
   /**
@@ -89,9 +99,43 @@ export const formatMs = (ms: number): string =>
 export const formatCost = (usd: number): string =>
   usd > 0 && usd < 0.0001 ? "<$0.0001" : `$${usd.toFixed(4)}`;
 
+/**
+ * NL2SQL reports its run per graph node (`usage.nodes`); the log names steps
+ * after what they did. The service's cost there is an estimate from recorded
+ * tokens and a dated list-price table, and is labelled as one.
+ */
+const NODE_FOR_SERVICE: Record<string, string> = {
+  table_selection: "select_table",
+  sql_generation: "sql_gen",
+  chart: "graph_agent",
+  answer: "final_answer",
+};
+
+const nodeCallOf = (
+  usage: Record<string, unknown> | null,
+  service: string,
+): RunLogCall | undefined => {
+  const nodes = usage?.nodes;
+  if (!Array.isArray(nodes)) return undefined;
+  const found = nodes
+    .map(asObject)
+    .find((entry) => entry?.node === NODE_FOR_SERVICE[service]);
+  if (!found) return undefined;
+  return {
+    service,
+    latencyMs: num(found.latency_ms),
+    provider: str(found.provider),
+    model: str(found.model),
+    inputTokens: num(found.input_tokens),
+    outputTokens: num(found.output_tokens),
+    costUsd: num(found.estimated_cost_usd),
+    estimated: true,
+  };
+};
+
 const callOf = (usage: Record<string, unknown> | null, service: string) => {
   const calls = usage?.service_calls;
-  if (!Array.isArray(calls)) return undefined;
+  if (!Array.isArray(calls)) return nodeCallOf(usage, service);
   const found = calls.find((entry) => asObject(entry)?.service === service) as
     Record<string, unknown> | undefined;
   if (!found) return undefined;
@@ -275,6 +319,7 @@ export function readRunLog({
       label: selected.length ? "Selected tables" : "Read tables",
       detail: `${tables.length === 1 ? "1 table" : `${tables.length} tables`} · ${tables.join(", ")}`,
       state: "done",
+      call: callOf(usage, "table_selection"),
       lines: selected.length
         ? tables
         : [
@@ -365,6 +410,18 @@ export function readRunLog({
     });
   }
 
+  // 7b — writing the answer, when the run reported what that call took.
+  const answerCall = callOf(usage, "answer");
+  if (answerCall) {
+    steps.push({
+      key: "answer",
+      label: "Wrote the answer",
+      detail: answerCall.model,
+      state: "done",
+      call: answerCall,
+    });
+  }
+
   // 8 — the service's own verdict on the turn. `is_answered: false` means the
   // run finished and decided it had not answered; it is flagged rather than
   // failed, because there is an answer on screen to read.
@@ -403,8 +460,24 @@ export function readRunLog({
     (sum: number, entry) => sum + (num(asObject(entry)?.cost_usd) ?? 0),
     0,
   );
-  const totals =
-    usage || latencyMs !== undefined
+  const nodes = Array.isArray(usage?.nodes) ? usage.nodes : null;
+  const totals = nodes
+    ? {
+        // NL2SQL: the agent's own processing time and the whole run's tokens.
+        // An incomplete cost (a model with no price) is withheld, never summed
+        // as if the unpriced calls were free.
+        latencyMs: num(usage?.latency_ms) ?? latencyMs,
+        totalTokens:
+          (num(usage?.input_tokens) ?? 0) + (num(usage?.output_tokens) ?? 0) ||
+          undefined,
+        costUsd:
+          usage?.cost_complete === false
+            ? undefined
+            : num(usage?.estimated_cost_usd),
+        costEstimated: true,
+        costIncomplete: usage?.cost_complete === false,
+      }
+    : usage || latencyMs !== undefined
       ? {
           latencyMs: summed || latencyMs,
           totalTokens: num(usage?.total_tokens),

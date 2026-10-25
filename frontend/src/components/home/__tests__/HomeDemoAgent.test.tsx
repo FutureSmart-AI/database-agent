@@ -52,6 +52,22 @@ vi.mock("@/data/mutations", () => ({
   }),
 }));
 vi.mock("@/lib/fonts", () => ({ NL2SQL_FONT_CLASS: "font-test" }));
+const demo = vi.hoisted(() => ({
+  allowance: {
+    daily_limit: 5,
+    daily_used: 1,
+    daily_remaining: 4,
+    daily_resets_at: null as string | null,
+    total_limit: 20,
+    total_used: 1,
+    total_remaining: 19,
+    budget_open: true,
+  },
+}));
+vi.mock("@/data/demo", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/data/demo")>()),
+  useDemoAllowance: () => ({ data: demo.allowance }),
+}));
 
 const wrapped = (node: ReactNode) =>
   render(<ToastProvider>{node}</ToastProvider>);
@@ -89,5 +105,52 @@ describe("Home — shared example agent", () => {
     expect(card.getByRole("button", { name: "Settings for My Agent" }));
     expect(card.getByRole("button", { name: "Share My Agent" }));
     expect(card.getByRole("button", { name: "Delete My Agent" }));
+  });
+});
+
+/**
+ * "Try with sample data": the first thing a new user can do without a key or a
+ * database — open the shared sample agent and ask. The free allowance is shown
+ * before it runs out, and once it has, the three ways to keep going.
+ */
+describe("Home — try with sample data", () => {
+  it("offers the sample agent with the free questions left", () => {
+    wrapped(<HomeView />);
+
+    const section = within(
+      screen.getByRole("region", { name: "Try with sample data" }),
+    );
+    expect(
+      section.getByRole("button", { name: /SaaS Benchmark.*Ask a question/ }),
+    ).toBeTruthy();
+    expect(section.queryByText(/My Agent/)).toBeNull();
+    expect(
+      section.getByText("4 of 5 free questions left today · 19 of 20 in total"),
+    ).toBeTruthy();
+  });
+
+  it("says when the free questions are used up and where to go next", () => {
+    demo.allowance = {
+      ...demo.allowance,
+      total_used: 20,
+      total_remaining: 0,
+    };
+    wrapped(<HomeView />);
+
+    const section = within(
+      screen.getByRole("region", { name: "Try with sample data" }),
+    );
+    expect(
+      section.getByText("You have used all 20 free sample-data questions."),
+    ).toBeTruthy();
+    expect(
+      section.getByRole("link", { name: "Add your OpenAI key" }),
+    ).toHaveAttribute("href", "/database-agent/credentials");
+    expect(
+      section.getByRole("link", { name: "Self-host from GitHub" }),
+    ).toHaveAttribute(
+      "href",
+      "https://github.com/FutureSmart-AI/database-agent",
+    );
   });
 });

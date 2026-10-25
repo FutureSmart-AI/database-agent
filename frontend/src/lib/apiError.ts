@@ -39,6 +39,14 @@ export function apiMessage(error: unknown): string {
       ?.detail;
 
     if (typeof detail === "string") return detail;
+    // `{code, message}`: the service named the case and wrote the sentence.
+    if (
+      detail &&
+      typeof detail === "object" &&
+      typeof (detail as { message?: unknown }).message === "string"
+    ) {
+      return (detail as { message: string }).message;
+    }
     if (Array.isArray(detail)) {
       const first = detail[0] as { msg?: string; loc?: unknown[] } | undefined;
       if (first?.msg) {

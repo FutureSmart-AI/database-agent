@@ -1,10 +1,13 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
+import DemoAllowanceNote from "@/components/demo/DemoAllowanceNote";
 import { fetchDatabases, fetchTables } from "@/data/databases";
+import { DEMO_ALLOWANCE_KEY, demoBlocked, useDemoAllowance } from "@/data/demo";
+import { useAgent } from "@/data/useAgents";
 import { useCollapsed } from "@/lib/useCollapsed";
 import {
   isReadOnlyTab,
@@ -33,6 +36,14 @@ export default function Nl2sqlChatView() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const [suggestionDraft, setSuggestionDraft] = useState<string | null>(null);
+  // Bumped whenever a suggested question is put into the composer, so the
+  // input takes focus and Enter sends it.
+  const [composerFocus, setComposerFocus] = useState(0);
+  const pickQuestion = (question: string) => {
+    chat.setInputValue(question);
+    setSuggestionDraft(question);
+    setComposerFocus((n) => n + 1);
+  };
   // Closed to begin with: the thread is what the screen is for, and the schema
   // is the reference you reach for while writing a question.
   const [schemaOpen, setSchemaOpen] = useState(false);
@@ -41,6 +52,24 @@ export default function Nl2sqlChatView() {
   // every visit is the part that would wear thin.
   const { collapsed: listCollapsed, toggle: toggleList } =
     useCollapsed("conversation-list");
+
+  // A shared sample-data agent answers on FutureSmart's key, a few free
+  // questions at a time: say so above the thread, with what is left, and
+  // re-read the count whenever an answer finishes or is refused.
+  const { agent } = useAgent(chat.nl2sqlId ?? undefined);
+  const isDemo = Boolean(agent?.demo);
+  const demoAllowance = useDemoAllowance(isDemo);
+  const composerBlockedNote =
+    isDemo && demoBlocked(demoAllowance.data)
+      ? "No free sample-data questions left — the options above show how to keep going."
+      : null;
+  const wasLoading = useRef(false);
+  useEffect(() => {
+    if (wasLoading.current && !chat.messageLoading && isDemo) {
+      void queryClient.invalidateQueries({ queryKey: DEMO_ALLOWANCE_KEY });
+    }
+    wasLoading.current = chat.messageLoading;
+  }, [chat.messageLoading, isDemo, queryClient]);
 
   const sessions = useQuery({
     queryKey: ["nl2sqlSessions", chat.sessionSource.key, chat.activeTab],
@@ -206,6 +235,10 @@ export default function Nl2sqlChatView() {
           }
         />
 
+        {isDemo && (
+          <DemoAllowanceNote allowance={demoAllowance.data} variant="bar" />
+        )}
+
         {/* The thread and the schema sit side by side under the header, as in
             the artifact: the reference stays open while the thread scrolls. */}
         <div className="flex min-h-0 flex-1">
@@ -241,17 +274,16 @@ export default function Nl2sqlChatView() {
                     voiceOutputEnabled={chat.voiceOutputEnabled}
                     excludedTables={excludedTables}
                     initialSuggestedQuestions={chat.initialSuggestedQuestions}
-                    onPickQuestion={chat.setInputValue}
+                    onPickQuestion={pickQuestion}
+                    suggestionsDisabled={Boolean(composerBlockedNote)}
                     error={chat.chatError}
                   />
                 ) : (
                   <ChatEmptyState
                     databaseName={database?.db_name}
                     suggestions={chat.initialSuggestedQuestions}
-                    onPick={(question) => {
-                      chat.setInputValue(question);
-                      setSuggestionDraft(question);
-                    }}
+                    onPick={pickQuestion}
+                    disabled={Boolean(composerBlockedNote)}
                   />
                 )}
                 <Composer
@@ -260,6 +292,8 @@ export default function Nl2sqlChatView() {
                   onChange={chat.setInputValue}
                   onSend={chat.handleSendMessage}
                   voiceInputEnabled={chat.voiceInputEnabled}
+                  blockedNote={composerBlockedNote}
+                  focusSignal={composerFocus}
                 />
               </>
             ) : chat.selectedItemData ? (
@@ -279,6 +313,7 @@ export default function Nl2sqlChatView() {
                 voiceOutputEnabled={chat.voiceOutputEnabled}
                 excludedTables={excludedTables}
                 initialSuggestedQuestions={chat.initialSuggestedQuestions}
+                composerBlockedNote={composerBlockedNote}
               />
             ) : (
               <div className="flex flex-1 items-center justify-center p-6 text-center text-sm text-n2s-ink-3">

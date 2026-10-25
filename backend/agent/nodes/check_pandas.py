@@ -173,7 +173,7 @@ async def check_pandas_needed(state: AgentState) -> Literal["invoke_pandas", "fi
             record_node_seconds(
                 state, "check_pandas", execution_time, provider=provider, model=model_name,
                 input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=tokens_used,
-                key_type=key_type,
+                cached_input_tokens=getattr(cb, "prompt_tokens_cached", 0), key_type=key_type,
             )
 
             await tracker.record_event(

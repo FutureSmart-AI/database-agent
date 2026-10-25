@@ -29,6 +29,7 @@ interface WireDatabase {
   is_active: boolean;
   status: "untested" | "connected" | "error";
   table_count: number | null;
+  included_table_count?: number | null;
   /** Always masked as "***". */
   db_password: string;
 }
@@ -75,8 +76,9 @@ function toDatabase(row: WireDatabase): AgentDatabase {
       ? Date.parse(row.description_updated_at)
       : null,
     table_count: row.table_count,
-    // The list endpoint does not report visibility; the tables call fills it in.
-    included_table_count: 0,
+    // Tables the agent may read. Null when the service has no valid visibility
+    // record for this database (the agent then reads none) or predates the field.
+    included_table_count: row.included_table_count ?? null,
   };
 }
 

@@ -8,6 +8,7 @@ from knowledge.services.sqlmodel_session import get_async_session
 from models.sql_models import ChatbotConnection
 from datetime import datetime
 from knowledge.services.logger import logger
+from database_connection.source_connection import open_source_connection
 
 
 def get_connection():
@@ -111,12 +112,7 @@ async def get_all_tables(db_details):
     """Get all table names from the database."""
     try:
         if db_details['db_engine'] == 'mysql':
-            conn = pymysql.connect(
-                host=db_details['db_host'],
-                user=db_details['db_user'],
-                password=db_details['db_password'],
-                database=db_details['db_name']
-            )
+            conn = open_source_connection(db_details)
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("SHOW TABLES")
@@ -125,13 +121,7 @@ async def get_all_tables(db_details):
                 conn.close()
 
         elif db_details['db_engine'] == 'postgresql':
-            import psycopg2
-            conn = psycopg2.connect(
-                host=db_details['db_host'],
-                user=db_details['db_user'],
-                password=db_details['db_password'],
-                database=db_details['db_name']
-            )
+            conn = open_source_connection(db_details)
             try:
                 with conn.cursor() as cursor:
                     cursor.execute("""
@@ -165,12 +155,7 @@ async def get_table_columns(db_details, table_name):
         try:
             engine = db_details.get('db_engine')
             if engine == 'mysql':
-                conn = pymysql.connect(
-                    host=db_details['db_host'],
-                    user=db_details['db_user'],
-                    password=db_details['db_password'],
-                    database=db_details['db_name']
-                )
+                conn = open_source_connection(db_details)
                 try:
                     with conn.cursor() as cursor:
                         cursor.execute(f"SHOW COLUMNS FROM `{table_name}`")
@@ -188,13 +173,7 @@ async def get_table_columns(db_details, table_name):
                         
 
             elif engine == 'postgresql':
-                import psycopg2
-                conn = psycopg2.connect(
-                    host=db_details['db_host'],
-                    user=db_details['db_user'],
-                    password=db_details['db_password'],
-                    database=db_details['db_name']
-                )
+                conn = open_source_connection(db_details)
                 try:
                     with conn.cursor() as cursor:
                         cursor.execute(

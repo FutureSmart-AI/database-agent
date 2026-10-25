@@ -358,7 +358,8 @@ def match_table_names_with_db(table_flags, table_descriptions, db_table_names):
     return matched_tables
 
 import mysql.connector
-def get_unique_values_for_columns(db_details, table_name, column_names):
+def get_unique_values_for_columns(db_details, table_name, column_names, limit=None):
+    """Distinct values per column; `limit` caps each read when only a sample is needed."""
     try:
         start_time = time.time()
         
@@ -377,7 +378,9 @@ def get_unique_values_for_columns(db_details, table_name, column_names):
                         query = f'SELECT DISTINCT "{column_name}" FROM "{table_name}";'
                     else:
                         query = f"SELECT DISTINCT `{column_name}` FROM `{table_name}`;"
-                    
+                    if limit is not None:
+                        query = query[:-1] + f" LIMIT {int(limit)};"
+
                     cursor.execute(query)
                     results = cursor.fetchall()
                     unique_values[column_name] = [str(row[0]) for row in results if row[0] is not None]
@@ -470,3 +473,83 @@ async def get_high_cardinality_columns(user_id, agent_id, db_id: Optional[str] =
     except Exception as e:
         logger.error(f"Exception in get_high_cardinality_columns: {str(e)}")
         return {"message": f"Error in get_high_cardinality_columns: {str(e)}", "status": False}
+
+
+def _description_map(description) -> dict:
+    """{table: description} from the stored list-of-single-key-dicts (or its JSON string)."""
+    if isinstance(description, str):
+        try:
+            description = json.loads(description)
+        except json.JSONDecodeError:
+            return {}
+    if isinstance(description, dict):
+        return dict(description)
+    out = {}
+    for item in description or []:
+        if isinstance(item, dict):
+            out.update(item)
+    return out
+
+
+def merge_generated_descriptions(current_description, current_flags, started_with: dict,
+                                 generated: dict, tables: list):
+    """What a description job may write, given what is stored NOW.
+
+    The job read the descriptions when it started (`started_with`) and spent seconds asking a
+    model. Anything stored for a table that differs from what the job started with was written
+    by someone else in the meantime (a person, or provisioning that posts business
+    definitions) and is kept: the job only fills what it was asked to fill. Visibility flags
+    are always taken from the stored record, since the job never changes them; a table new to
+    the record is included, as before.
+
+    Returns (description_list, flags) for the live `tables`, in their order.
+    """
+    now = _description_map(current_description)
+    flags_now = dict(current_flags or {})
+    descriptions, flags = [], {}
+    for table in tables:
+        stored = now.get(table)
+        if table in now and (stored or "") != (started_with.get(table) or ""):
+            value = stored
+        else:
+            value = generated.get(table) or stored or ""
+        descriptions.append({table: value or ""})
+        flags[table] = flags_now.get(table, True)
+    return descriptions, flags
+
+
+async def save_generated_table_descriptions(agent_id: str, db_id: str, started_with: dict,
+                                            generated: dict, tables: list) -> dict:
+    """Write a description job's results without losing a description stored while it ran.
+
+    The record is read again under a row lock (SELECT ... FOR UPDATE) and merged with
+    `merge_generated_descriptions`, so a write that commits before this one is kept, and one
+    that arrives during it waits and then applies on top. DA-DESC-RACE-001: adding the sample
+    database started a job that overwrote the business definitions posted 14 s later.
+    """
+    try:
+        async for session in get_async_session():
+            record = (await session.execute(
+                select(TableDescription).where(
+                    TableDescription.agent_id == agent_id,
+                    TableDescription.db_id == db_id,
+                ).with_for_update()
+            )).scalars().first()
+            if record is None:
+                break
+            current_flags = canonical_table_flags_for_write(record.entry_flags or {})
+            description, flags = merge_generated_descriptions(
+                record.description, current_flags, started_with, generated, tables)
+            record.description = description
+            record.entry_flags = canonical_table_flags_for_write(flags)
+            record.updated_at = datetime.utcnow()
+            await session.commit()
+            logger.info(f"Saved generated table descriptions for agent_id={agent_id} db_id={db_id}")
+            return {"message": "save_generated_table_descriptions executed", "status": True}
+        # No record yet: nothing can have been written meanwhile, so the plain upsert is safe.
+        description, flags = merge_generated_descriptions([], {}, started_with, generated, tables)
+        return await upload_to_db_table_description(None, agent_id, "", "", description, flags,
+                                                    db_id=db_id)
+    except Exception as e:
+        logger.error(f"Exception in save_generated_table_descriptions: {str(e)}")
+        return {"message": f"Error in save_generated_table_descriptions: {str(e)}", "status": False}

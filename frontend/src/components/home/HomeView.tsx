@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 
+import DemoAllowanceNote from "@/components/demo/DemoAllowanceNote";
 import Icon from "@/components/Icon";
 import { Card } from "@/components/ui/Card";
 import Chip from "@/components/ui/Chip";
@@ -13,6 +14,7 @@ import SearchInput from "@/components/ui/SearchInput";
 import { AgentGridSkeleton } from "@/components/ui/Skeletons";
 import TabNav from "@/components/ui/TabNav";
 import { usageTotals } from "@/data/agents";
+import { useDemoAllowance } from "@/data/demo";
 import { useAgentMutations } from "@/data/mutations";
 import type { Agent } from "@/data/types";
 import { useUsageByAgent } from "@/data/usage";
@@ -124,6 +126,17 @@ export default function HomeView() {
     [sharedMatches],
   );
 
+  // The shared sample-data agents, newest first: the quickest way to see the
+  // product work, before connecting anything.
+  const samples = useMemo(
+    () =>
+      agents
+        .filter((agent) => agent.demo && agent.service_ref)
+        .sort((a, b) => b.created - a.created),
+    [agents],
+  );
+  const demoAllowance = useDemoAllowance(samples.length > 0);
+
   const shownCount = tab === "mine" ? mine.length : sharedMatches.length;
   const totalCount =
     tab === "mine"
@@ -222,6 +235,68 @@ export default function HomeView() {
           </Button>
         }
       />
+
+      {samples.length > 0 && (
+        <section
+          aria-labelledby="try-sample-data"
+          className="mb-5 rounded-2xl border border-indigo-100 bg-linear-to-r from-indigo-50 to-white p-5 shadow-sm"
+        >
+          <div className="flex flex-wrap items-start gap-4">
+            <div className="flex h-12 w-12 shrink-0 items-center justify-center rounded-xl bg-white text-indigo-600 shadow-sm ring-1 ring-indigo-100">
+              <Icon name="spark" className="h-6 w-6" />
+            </div>
+            <div className="min-w-60 flex-1">
+              <h2
+                id="try-sample-data"
+                className="m-0 text-lg font-bold text-slate-900"
+              >
+                Try with sample data
+              </h2>
+              <p className="m-0 mt-1 max-w-[70ch] text-sm text-slate-600">
+                Ask questions about a ready-made database — no API key or
+                database of your own needed. The agent writes the SQL, runs it
+                read-only, and shows you the rows, a chart and follow-up
+                questions.
+              </p>
+              <div className="mt-2">
+                <DemoAllowanceNote
+                  allowance={demoAllowance.data}
+                  variant="inline"
+                />
+              </div>
+            </div>
+          </div>
+          <div className="mt-4 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-3">
+            {samples.map((agent) => (
+              <button
+                key={agent.agent_id}
+                type="button"
+                onClick={() => openAgent(agent)}
+                className="group flex cursor-pointer flex-col gap-1 rounded-xl border border-black/5 bg-white p-4 text-left shadow-sm transition-all duration-200 hover:border-indigo-300 hover:shadow-md"
+              >
+                <span className="font-semibold text-slate-900 group-hover:text-indigo-700">
+                  {agent.name}
+                </span>
+                <span className="text-xs text-slate-500">
+                  {agent.dbs.length > 0
+                    ? agent.dbs
+                        .map((db) =>
+                          db.table_count
+                            ? `${db.db_name} · ${db.table_count} tables`
+                            : db.db_name,
+                        )
+                        .join(", ")
+                    : "Sample database"}
+                </span>
+                <span className="mt-2 inline-flex items-center gap-1 text-sm font-semibold text-indigo-600">
+                  Ask a question
+                  <Icon name="send" className="size-3.5" />
+                </span>
+              </button>
+            ))}
+          </div>
+        </section>
+      )}
 
       <div className="mb-5 grid grid-cols-1 gap-4 sm:grid-cols-2">
         <button

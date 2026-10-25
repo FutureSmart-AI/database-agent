@@ -3,7 +3,8 @@ RESTful API endpoints for Chat Management
 Following REST best practices for managing agent chat interactions
 """
 from fastapi import HTTPException, Depends, APIRouter, Path, Query, BackgroundTasks
-from agent.utils.model_profiles import ModelConfigurationError
+from agent.utils.model_profiles import ModelConfigurationError, ProviderCredentialError
+from agent.utils.provider_key_scope import OWN, is_provider_auth_error, owner_key_source, rejected_key_error
 from starlette.requests import Request
 from chatbot_management.utils.api_validation import get_api_key_or_session
 from chatbot_management.services.logger import logger
@@ -14,6 +15,10 @@ import uuid
 import time
 import json
 from agent.utils.authorization import require_agent_permission
+from chatbot_management.db_utils.demo_allowance import (
+    DemoRefusal, demo_allowance, demo_audience, demo_question_user, demo_usage_summary,
+    finish_demo_question, reserve_demo_question,
+)
 
 # Import from agent module
 from agent.db_utils.common_db_utils import (
@@ -25,6 +30,8 @@ from agent.db_utils.session_db_utils import (
     get_session_chat_counter_from_db
 )
 from agent.runner import run_agent_flow
+from agent.utils.model_pricing import answer_usage
+from agent.utils.node_metrics import get_node_events
 from api.v1.utils.chat_helper import (
     get_past_messages_safe, get_owner_email_by_agent_id, ensure_session_belongs_to_agent,
     get_agent_with_visibility, get_agent_runtime_db,
@@ -43,6 +50,30 @@ from otel_tracing import track_time
 import asyncio
 
 router = APIRouter(prefix="/v1")
+
+
+async def _owner_credential_error(exc: BaseException, owner_email: Optional[str]):
+    """The credential error the owner should see for this failure, or None.
+
+    Either the flow already raised one (missing / invalid / unreadable key), or the provider
+    refused a bring-your-own-key owner's key outright (HTTP 401) — reported as their key
+    being rejected rather than as a generic failure. A 401 for a platform-sourced owner is
+    left alone: it is the platform's key, not theirs.
+    """
+    current, seen = exc, set()
+    while current is not None and id(current) not in seen:
+        seen.add(id(current))
+        if isinstance(current, ProviderCredentialError):
+            return current
+        current = current.__cause__ or current.__context__
+    if not is_provider_auth_error(exc):
+        return None
+    try:
+        if await owner_key_source(owner_email) != OWN:
+            return None
+    except Exception:
+        return None
+    return rejected_key_error(None)
 
 
 def _build_follow_up_context(result: dict) -> Optional[str]:
@@ -175,6 +206,83 @@ async def enforce_query_cap(owner_id: Optional[str], *, surface: str) -> None:
     )
 
 
+async def reserve_demo_question_or_refuse(user_id: str, agent_id: str, chat_id: str,
+                                          request_id: str, audience: str = "public") -> dict:
+    """Count a free sample-data question before it runs, or refuse it.
+
+    429 with code `demo_allowance_exhausted` when the user's daily or lifetime allowance or
+    the monthly budget is used up; the detail carries the allowance so the UI can show it.
+    FAILS CLOSED: a question we cannot count is refused (503), because FutureSmart pays for
+    it — see chatbot_management/db_utils/demo_allowance.py.
+    """
+    from chatbot_management.services.sqlmodel_session import async_session
+
+    if not user_id:
+        raise HTTPException(status_code=401, detail={
+            "code": "demo_requires_sign_in",
+            "message": "Sign in to ask the sample-data agent a question."})
+    try:
+        async with async_session() as session:
+            status = await reserve_demo_question(
+                session, user_id=user_id, agent_id=agent_id, chat_id=chat_id,
+                request_id=request_id, audience=audience)
+    except DemoRefusal as refusal:
+        logger.warning(f"Demo question refused | reason={refusal.reason} user_id={user_id} "
+                       f"agent_id={agent_id}")
+        raise HTTPException(status_code=429, detail={
+            "code": "demo_allowance_exhausted", "reason": refusal.reason,
+            "message": refusal.message, "allowance": refusal.status})
+    except Exception as exc:
+        logger.error(f"Demo allowance check failed, refusing | user_id={user_id} "
+                     f"agent_id={agent_id} error={exc}")
+        raise HTTPException(status_code=503, detail={
+            "code": "demo_allowance_unavailable",
+            "message": "Free sample-data questions are unavailable right now. Please try "
+                       "again in a few minutes."})
+    logger.info(f"Demo question counted | user_id={user_id} agent_id={agent_id} "
+                f"chat_id={chat_id} audience={status.get('audience')} "
+                f"daily_used={status['daily_used']} "
+                f"total_used={status['total_used']}")
+    return status
+
+
+async def close_demo_question(chat_id: str, *, answered: bool) -> None:
+    """Mark a counted demo question answered or failed. Never raises: the answer is sent
+    either way, and an unclosed question stays counted, which is the safe side."""
+    from chatbot_management.services.sqlmodel_session import async_session
+    try:
+        async with async_session() as session:
+            await finish_demo_question(session, chat_id, answered=answered)
+    except Exception as exc:
+        logger.error(f"Could not close demo question | chat_id={chat_id} error={exc}")
+
+
+@router.get("/demo/allowance")
+async def get_demo_allowance(auth: dict = Depends(get_api_key_or_session)):
+    """The signed-in user's free sample-data questions: used and remaining, today and in
+    total. Session callers only — the allowance belongs to a signed-in person."""
+    from chatbot_management.services.sqlmodel_session import async_session
+
+    user_id = (auth.get("user_id") or "").strip().lower() if auth.get("auth_type") == "session" else ""
+    if not user_id:
+        raise HTTPException(status_code=401, detail="Sign in to see your free questions")
+    async with async_session() as session:
+        return await demo_allowance(session, user_id, demo_audience(auth))
+
+
+@router.get("/demo/usage")
+async def get_demo_usage(auth: dict = Depends(get_api_key_or_session)):
+    """Adoption of the free sample-data questions (master key only): users who asked a first
+    question, explored three, came back on another day, then added a key or an agent; and
+    what the questions cost."""
+    from chatbot_management.services.sqlmodel_session import async_session
+
+    if auth.get("auth_type") != "master_api_key":
+        raise HTTPException(status_code=403, detail="Master key required")
+    async with async_session() as session:
+        return await demo_usage_summary(session)
+
+
 @router.post("/agents/{agent_id}/chat")
 @track_time("API: NL2SQL - Chat")
 async def chat_with_agent(
@@ -208,16 +316,27 @@ async def chat_with_agent(
         logger.info(f"Effective answer settings | {effective_settings}")
 
         owner_email = await get_owner_email_by_agent_id(agent_id)
-
-        # The owner's rolling-24h query cap. Checked here — after the owner is known,
-        # before any model call — so a refused question costs nothing, and it covers
-        # streaming and non-streaming alike since both paths run below this point. It also
-        # covers the session-message route, which delegates to this function.
-        await enforce_query_cap(owner_email, surface="agent_chat")
-
         chat_id = str(uuid.uuid4())
+
+        # A supplied session must belong to this agent — checked before the allowance is
+        # charged, any history is read or the model is called.
+        await ensure_session_belongs_to_agent(body.session_id, agent_id)
+
+        # A demo agent runs on the platform key for every signed-in user, so its questions
+        # are charged to the user asking (free allowance + monthly budget), not to the
+        # owner's cap — which every visitor would otherwise share. Anyone else's agent keeps
+        # the owner's rolling-24h query cap. Both are checked here — after the owner is
+        # known, before any model call — so a refused question costs nothing, for streaming
+        # and non-streaming alike and for the session-message route that delegates here.
+        demo_user = demo_question_user(agent, auth_type, user_id)
+        demo_status = None
+        if demo_user is not None:
+            demo_status = await reserve_demo_question_or_refuse(
+                demo_user, agent_id, chat_id, request_id, demo_audience(auth))
+        else:
+            await enforce_query_cap(owner_email, surface="agent_chat")
+
         session_id = body.session_id
-        await ensure_session_belongs_to_agent(session_id, agent_id)
 
         message_history = await get_past_messages_safe(session_id, user_id, agent_id, body.query)
         past_messages = message_history["past_messages"]
@@ -258,12 +377,18 @@ async def chat_with_agent(
                                              owner_email, auth_type),
                     )
                     result["follow_up_questions"] = follow_up_qs
-                    final_response = build_chat_response(result, body, session_id, chat_id, show_sql_query, show_db_result, export_url)
+                    final_response = build_chat_response(result, body, session_id, chat_id, show_sql_query, show_db_result, export_url,
+                                                     usage=answer_usage(get_node_events(result), agent_elapsed * 1000, result.get("llm_usage")))
+                    if demo_status is not None:
+                        final_response["demo_allowance"] = demo_status
+                        await close_demo_question(chat_id, answered=True)
 
                     from agent.utils.common_utils import serialize_db_value
                     yield f"full_metadata: {json.dumps(serialize_db_value(final_response))}\n\n"
                 except Exception as e:
                     logger.error(f"[STREAMING ERROR] {str(e)}")
+                    if demo_status is not None:
+                        await close_demo_question(chat_id, answered=False)
                     # Record the failure too — a health store that only sees successes
                     # reports a 100% success rate no matter how badly the agent is doing.
                     await persist_health_event(
@@ -271,7 +396,11 @@ async def chat_with_agent(
                         locals().get("result") or {}, time.time() - agent_start_time,
                         db_fetch_elapsed, owner_email, auth_type, error=e,
                     )
-                    yield f"full_metadata: {json.dumps({'error': str(e)})}\n\n"
+                    credential_error = await _owner_credential_error(e, owner_email=owner_email)
+                    if credential_error is not None:
+                        yield f"full_metadata: {json.dumps({'error': str(credential_error), 'code': credential_error.code})}\n\n"
+                    else:
+                        yield f"full_metadata: {json.dumps({'error': str(e)})}\n\n"
 
             logger.info(f"[CONCURRENCY] STREAM EXIT: request_id={request_id} agent_id={agent_id} session_id={session_id} timestamp={time.time()}")
             return StreamingResponse(agent_stream(), media_type="text/event-stream")
@@ -298,7 +427,11 @@ async def chat_with_agent(
                                      owner_email, auth_type),
             )
             result["follow_up_questions"] = follow_up_qs
-            final_response = build_chat_response(result, body, session_id, chat_id, show_sql_query, show_db_result, export_url)
+            final_response = build_chat_response(result, body, session_id, chat_id, show_sql_query, show_db_result, export_url,
+                                                 usage=answer_usage(get_node_events(result), agent_elapsed * 1000, result.get("llm_usage")))
+            if demo_status is not None:
+                final_response["demo_allowance"] = demo_status
+                await close_demo_question(chat_id, answered=True)
 
             logger.info(f"[CONCURRENCY] NON-STREAM EXIT: request_id={request_id} agent_id={agent_id} session_id={session_id} timestamp={time.time()}")
             from agent.utils.common_utils import serialize_db_value
@@ -308,6 +441,8 @@ async def chat_with_agent(
         raise
     except Exception as exc:
         logger.error(f"[CONCURRENCY] REQUEST ERROR: request_id={request_id} agent_id={agent_id} error={str(exc)} timestamp={time.time()}")
+        if locals().get("demo_status") is not None:
+            await close_demo_question(chat_id, answered=False)
         # Same reason as the streaming branch: failures must reach the health store, or
         # the failure rate is structurally unmeasurable. Best-effort — a monitoring write
         # must never replace the real exception the caller needs to see.
@@ -322,6 +457,10 @@ async def chat_with_agent(
             )
         except Exception:
             pass
+        credential_error = await _owner_credential_error(exc, owner_email=locals().get("owner_email"))
+        if credential_error is not None:
+            raise HTTPException(status_code=400, detail={"code": credential_error.code,
+                                                        "message": str(credential_error)}) from exc
         if isinstance(exc, ModelConfigurationError):
             raise HTTPException(status_code=400, detail={"code": "model_configuration_error",
                                                         "message": str(exc)}) from exc

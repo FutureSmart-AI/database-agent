@@ -6,11 +6,12 @@ from typing import Optional, List
 from datetime import datetime
 
 
-# Applied when the caller does not say otherwise. A new agent is far more often
-# a SaaS one than not, and an agent with no business rules answers revenue and
-# churn questions confidently wrong - so the useful default is the template
-# rather than nothing. Pass template_id=null explicitly for a bare agent.
-DEFAULT_TEMPLATE_ID = "saas_founder"
+# No business template unless the creator chooses one. A template's rules apply
+# to every question the agent is asked, whatever the database holds: with the
+# SaaS founder rules as the default, a shop database refused "top five customers
+# by total spend" in 6 of 40 fresh questions because it had no subscriptions or
+# payments to qualify them (0 of 40 without the template; DA-ANSWERABILITY-001).
+DEFAULT_TEMPLATE_ID = None
 
 
 class CreateAgentRequest(BaseModel):
@@ -30,10 +31,10 @@ class CreateAgentRequest(BaseModel):
     template_id: Optional[str] = Field(
         DEFAULT_TEMPLATE_ID,
         description=(
-            "Use-case template applied at creation. Defaults to the SaaS founder "
-            "template, which is currently the only one. Pass null for a bare agent "
-            "with no business rules; an unknown id is ignored and the agent is "
-            "still created."
+            "Use-case template applied at creation, from GET /agent-templates "
+            "(currently only saas_founder, for subscription-business databases). "
+            "Omit it or pass null for an agent with no business rules; an unknown "
+            "id is ignored and the agent is still created."
         ),
     )
 

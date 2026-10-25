@@ -1,4 +1,8 @@
-"""Fetch an owner's provider API key (BYOK), falling back to the platform key.
+"""Fetch an owner's provider API key (BYOK), falling back to the platform key where allowed.
+
+Whether the platform fallback is allowed at all is decided per owner by
+`agent/utils/provider_key_scope.py`: owners on `own` (bring-your-own-key) never fall back;
+owners on `platform` keep the behaviour described below.
 
 Reads NL2SQL's own `user_provider_keys` table. This used to be an HTTP GET to the usage
 service (`/v1/owners/{owner}/credentials/{provider}/internal`) on every LLM call from 20
@@ -181,9 +185,27 @@ async def get_owner_api_key_for_provider(
     
     Returns API key with comprehensive logging of source.
     """
-    source = None
-    api_key_val = None
-    
+    # Bring-your-own-key owners never reach the environment fallback below: their stored
+    # key is used, or the caller gets an error naming the provider and the fix. The bound
+    # request scope answers when it is this owner's; otherwise the stored choice is read.
+    from agent.utils.provider_key_scope import OWN, current_scope, owner_key_source, resolve_scope
+    scope = current_scope()
+    if scope is None or (owner_id and scope.owner_id != owner_id):
+        source = await owner_key_source(owner_id)
+        if source == OWN:
+            scope = await resolve_scope(owner_id)
+    else:
+        source = scope.source
+    if source == OWN:
+        owner_key = scope.owner_key(provider)
+        logger.info(
+            f"✅ [CREDENTIAL] Using OWNER API KEY (bring-your-own-key) | owner_id: {owner_id} | "
+            f"provider: {provider} | source: user_provider_keys"
+        )
+        if return_source:
+            return owner_key, "owner-key"
+        return owner_key
+
     if not owner_id:
         logger.info(f"🔑 [CREDENTIAL] No owner_id provided, using ENV VAR for provider: {provider}")
         env_key = _env_fallback(provider)
@@ -230,6 +252,8 @@ async def get_llm_api_key(owner_id: Optional[str], model_name: str, provider: Op
     key = await get_owner_api_key_for_provider(owner_id, prov)
     if key:
         return key
+    # Reached only for platform-sourced owners: a bring-your-own-key owner either got a key
+    # above or an error was raised.
     env_key = _env_fallback(prov)
     if env_key:
         logger.info(

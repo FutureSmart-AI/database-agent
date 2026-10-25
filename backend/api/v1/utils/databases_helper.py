@@ -168,9 +168,43 @@ async def _latest_job_status_by_db(agent_id: str) -> Dict[str, str]:
     return out
 
 
+def included_table_count(entry_flags: Any) -> Optional[int]:
+    """How many tables the agent may read in one database, from its visibility flags.
+
+    None when there is no valid flag map: the agent then reads no table at all (table access
+    fails closed, agent/utils/table_access.py), but "unknown" must not be shown as a count.
+    """
+    from agent.utils.table_flag_writes import canonical_table_flags_for_write
+    try:
+        flags = canonical_table_flags_for_write(entry_flags)
+    except (TypeError, ValueError):
+        return None
+    if not flags:
+        return None
+    return sum(1 for on in flags.values() if on)
+
+
+async def _included_table_counts(agent_id: str) -> Dict[str, Optional[int]]:
+    """{db_id: tables the agent may read}. Before this the listing carried no such figure and
+    the dashboard header added up zeros: "1 database · 0 tables" on an agent reading seven."""
+    from models.sql_models import TableDescription
+    out: Dict[str, Optional[int]] = {}
+    async for session in get_async_session():
+        res = await session.execute(
+            select(TableDescription.db_id, TableDescription.entry_flags)
+            .where(TableDescription.agent_id == agent_id)
+        )
+        for db_id, flags in res.all():
+            if db_id:
+                out[db_id] = included_table_count(flags)
+        return out
+    return out
+
+
 async def list_agent_databases(agent_id: str) -> List[Dict[str, Any]]:
     await verify_agent_exists(agent_id)
     jobs = await _latest_job_status_by_db(agent_id)
+    included = await _included_table_counts(agent_id)
     out: List[Dict[str, Any]] = []
     async for session in get_async_session():
         res = await session.execute(
@@ -187,6 +221,7 @@ async def list_agent_databases(agent_id: str) -> List[Dict[str, Any]]:
             row = _public_row(c, job_status=jobs.get(c.db_id))
             if row["table_count"] is None and c.db_id in fresh_counts:
                 row["table_count"] = fresh_counts[c.db_id]
+            row["included_table_count"] = included.get(c.db_id)
             out.append(row)
     return out
 

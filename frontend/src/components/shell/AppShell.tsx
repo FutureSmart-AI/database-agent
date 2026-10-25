@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 
 import Icon from "@/components/Icon";
+import { includedTableCount } from "@/data/agents";
 import AuthBridge from "@/data/AuthBridge";
 import { useAgent, useAgents } from "@/data/useAgents";
 import { PRODUCT_NAME } from "@/lib/constants";
@@ -83,8 +84,7 @@ function Shell({ children, agentId, title, crumb, flush }: AppShellProps) {
   // agent when one was asked for by id, and nothing otherwise. A shared agent
   // has to resolve here too, or its own pages render with no rail and no name.
   const { agent } = useAgent(agentId);
-  const tableCount =
-    agent?.dbs.reduce((total, db) => total + db.included_table_count, 0) ?? 0;
+  const tableCount = agent ? includedTableCount(agent.dbs) : null;
 
   // The rail navigates within one agent, so it only exists inside one. Home and
   // Usage are workspace-level and run full width.
@@ -175,7 +175,9 @@ function Shell({ children, agentId, title, crumb, flush }: AppShellProps) {
               <span className="h-3 w-px bg-slate-200" />
               <span className="font-mono text-[10px] text-slate-500">
                 {agent.dbs.length} database
-                {agent.dbs.length === 1 ? "" : "s"} · {tableCount} tables
+                {agent.dbs.length === 1 ? "" : "s"}
+                {tableCount !== null &&
+                  ` · ${tableCount} ${tableCount === 1 ? "table" : "tables"}`}
               </span>
             </div>
           </div>

@@ -1,0 +1,27 @@
+{
+  "agent_name": "Sample data: Cedar Lane online shop",
+  "greet_message": "This is Cedar Lane, a made-up online shop with a year of orders (calendar 2025). Ask about customers, revenue, products, payments or returns, or pick a question below. The data is synthetic and read-only.",
+  "database": {
+    "db_name": "sample_ecommerce",
+    "db_user": "sample_ecommerce_reader",
+    "db_engine": "postgresql",
+    "description": "Cedar Lane, a synthetic online shop selling electronics, home goods, apparel, beauty, sports, toys, books and office supplies to consumers and businesses in the United States. Covers calendar year 2025: customers, products and categories, orders and their line items, payments and returns."
+  },
+  "suggested_questions": [
+    "Who are our top five customers by total spend?",
+    "How did monthly revenue change across 2025?",
+    "Which product categories have the highest return rate?",
+    "What share of orders was paid with each payment method?",
+    "Which acquisition channel brings customers with the highest average order value?",
+    "Show a bar chart of the top five customers by total spend."
+  ],
+  "tables": {
+    "categories": "Product categories (8). category_id, name.",
+    "products": "The product catalogue (120 products). Each product belongs to one category (category_id references categories). list_price is the current selling price and unit_cost what the shop pays for it, both in US dollars. Gross margin of a sale = (order_items.unit_price - products.unit_cost) * quantity.",
+    "customers": "One row per customer account (2,400). segment is 'consumer' or 'business'. acquisition_channel is how the customer first found the shop: organic_search, paid_search, social, email, referral or marketplace. A customer's name is first_name and last_name together.",
+    "orders": "One row per order placed in 2025. status is processing, shipped, delivered or cancelled; a cancelled order was never paid and is excluded from revenue and spend. total_amount = subtotal - discount_amount + shipping_fee, in US dollars, and is the order's value. Business definitions: revenue = SUM(total_amount) of orders whose status is not 'cancelled'; a customer's total spend = SUM(total_amount) of their non-cancelled orders; average order value = AVG(total_amount) of non-cancelled orders. Use ordered_at for dates and months.",
+    "order_items": "The products in each order (order_id references orders, product_id references products). line_total = quantity * unit_price. An order item is 'sold' when its order is not cancelled and 'delivered' when its order's status is 'delivered'.",
+    "payments": "Payment attempts for orders. status 'captured' is a successful payment; 'failed' attempts are followed by a captured one. Each non-cancelled order has exactly one captured payment, so payment-method shares are counted over captured payments. method is card, paypal, apple_pay, gift_card or bank_transfer.",
+    "returns": "Return requests for individual order items (order_item_id references order_items). status is approved, rejected or pending; refund_amount is the line total for approved returns and 0 otherwise. Return rate of a group = approved returns / order items on delivered orders, as a percent."
+  }
+}

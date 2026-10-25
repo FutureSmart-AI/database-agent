@@ -158,21 +158,8 @@ async def delete_table_descriptions_db(user_id, chatbot_id, description):
         return {"message": f"Error in delete_table_descriptions_db: {str(e)}", "status": False}
 
 def get_db_connection(db_details):
-    if db_details['db_details']['db_engine'] == 'mysql':
-        connection = pymysql.connect(
-            host=db_details['db_details']['db_host'],
-            user=db_details['db_details']['db_user'],
-            password=db_details['db_details']['db_password'],
-            database=db_details['db_details']['db_name']
-        )
-    elif db_details['db_details']['db_engine'] == 'postgresql':
-        connection = psycopg2.connect(
-            host=db_details['db_details']['db_host'],
-            user=db_details['db_details']['db_user'],
-            password=db_details['db_details']['db_password'],
-            database=db_details['db_details']['db_name']
-        )
-    return connection
+    from database_connection.source_connection import open_source_connection
+    return open_source_connection(db_details['db_details'])
 
 # Function to fetch table names from the database
 def get_table_names_from_db(db_details):

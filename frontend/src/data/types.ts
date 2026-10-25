@@ -38,8 +38,11 @@ export interface AgentDatabase {
   description_updated_at: number | null;
   /** `null` until the schema has been read. */
   table_count: number | null;
-  /** Tables the agent may read. Counted from the tables endpoint. */
-  included_table_count: number;
+  /**
+   * Tables the agent may read, from the database's visibility settings;
+   * `null` when the service reports none (unknown, so never shown as 0).
+   */
+  included_table_count: number | null;
 }
 
 export interface AgentUsage {

@@ -11,6 +11,7 @@ from agent.state import AgentState
 from agent.utils.langchain_utils import get_table_descriptions_and_selected_tables  
 from agent.utils.langchain_utils import select_tables
 from agent.utils.agent_config_loader import get_agent_node_config
+from agent.utils.node_metrics import measure_node_calls
 from agent.utils.few_shot_utils import get_few_shot_service
 from agent.utils.prompts import build_few_shot_examples_string
 from logger import logger
@@ -96,9 +97,11 @@ async def node_select_and_fewshots(state: AgentState) -> AgentState:
             return {}, list(permitted)
         try:
             conf = await get_agent_node_config(agent_id, "select_table") if agent_id else None
-            _, selected = await select_tables(
-                refined_query, json.dumps([{key: value} for key, value in descriptions.items()]),
-                node_conf=conf)
+            # The table-selection model call gets its own entry in the run's metrics.
+            with measure_node_calls(state, "select_table", "select_table", conf):
+                _, selected = await select_tables(
+                    refined_query, json.dumps([{key: value} for key, value in descriptions.items()]),
+                    node_conf=conf)
             return descriptions, selected
         except (TableAccessPolicyError, ModelConfigurationError):
             raise

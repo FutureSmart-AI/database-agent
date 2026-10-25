@@ -1,0 +1,9 @@
+{
+  "profile": "futuresmart-recommended-v1",
+  "overrides": {
+    "sql_agent.db_router": {"provider": "openai", "model": "gpt-6-luna", "endpoint": "responses", "reasoning_effort": "low", "temperature": null, "max_tokens": 8192},
+    "sql_agent.select_table": {"provider": "openai", "model": "gpt-6-luna", "endpoint": "responses", "reasoning_effort": "low", "temperature": null, "max_tokens": 8192},
+    "sql_agent.sql_generation": {"provider": "openai", "model": "gpt-6-luna", "endpoint": "responses", "reasoning_effort": "low", "temperature": null, "max_tokens": 8192},
+    "pandas_agent.default": {"provider": "openai", "model": "gpt-6-luna", "endpoint": "responses", "reasoning_effort": "low", "temperature": null, "max_tokens": 8192}
+  }
+}

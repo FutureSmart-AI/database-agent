@@ -25,3 +25,5 @@ htmlcov/
 /standalone/
 .private/
 .qdrant-initialized
+# Model evaluation output (kept as CI artifacts and dated evidence records, not here).
+model-eval-results/

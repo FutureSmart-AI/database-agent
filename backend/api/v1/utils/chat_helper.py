@@ -7,7 +7,7 @@ import traceback
 import os
 from fastapi import HTTPException
 from chatbot_management.services.logger import logger
-from agent.db_utils.session_db_utils import log_new_session as agent_log_new_session
+from agent.db_utils.session_db_utils import chat_log_history, log_new_session as agent_log_new_session
 from agent.db_utils.common_db_utils import upload_to_db_nl2sql_logs
 from agent.runner import run_agent_flow
 from agent.utils.follow_up import generate_follow_up_questions
@@ -34,11 +34,7 @@ async def get_past_conversation_safe(session_id, agent_id):
                 ).order_by(ChatLogs.created_at)
             )
             rows = res.scalars().all()
-            for chat_log in rows:
-                if chat_log.user_query:
-                    messages.append({"role": "user", "content": chat_log.user_query})
-                if chat_log.gpt_response:
-                    messages.append({"role": "assistant", "content": chat_log.gpt_response})
+            messages.extend(chat_log_history(rows))
         logger.info(f"History retrieved: {len(messages)} messages")
         return messages
     except Exception as e:
@@ -62,11 +58,11 @@ async def get_past_messages_safe(session_id, user_id, agent_id, user_query):
 async def ensure_session_belongs_to_agent(session_id: Optional[str], agent_id: str) -> None:
     """Refuse a session_id that this API created for a different agent.
 
-    Runs before any history read or model call, so continuing another agent's conversation is
-    refused outright rather than only stripped of its history (which
+    Runs before any history read, allowance reservation or model call, so continuing another
+    agent's conversation is refused outright rather than only stripped of its history (which
     `get_past_conversation_safe` does in any case). A session id this API never created (a chat
-    service's own thread id) continues with this agent's turns only. A new conversation (no id)
-    is always allowed.
+    service's own thread id) continues with this agent's turns only. No session_id (or the
+    Swagger placeholder) starts a new conversation.
     """
     if not session_id or session_id in ["", "string"]:
         return
@@ -410,9 +406,14 @@ def _tables_referenced_in_sql(candidate_tables: Optional[List[str]], sql_query: 
 def build_chat_response(
     result: dict, body: Any, session_id: str, chat_id: str,
     show_sql_query: bool, show_db_result: bool,
-    export_url: Optional[str] = None
+    export_url: Optional[str] = None, usage: Optional[dict] = None,
 ) -> dict:
-    """Build the standard non-streaming or streaming final response dict."""
+    """Build the standard non-streaming or streaming final response dict.
+
+    ``usage`` is this answer's latency, tokens and estimated cost
+    (``agent.utils.model_pricing.answer_usage``); it is returned whenever supplied,
+    independent of ``debug_info``, because it describes the answer, not the data.
+    """
     final_text = result.get("response", "")
     follow_up_questions = result.get("follow_up_questions")
 
@@ -431,6 +432,8 @@ def build_chat_response(
         # LangSmith trace id (None when tracing is disabled / unavailable).
         "trace_id": result.get("trace_id"),
     }
+    if usage is not None:
+        final_response["usage"] = usage
 
     # `debug_info` (request-level) is the master switch: no debug info at all when it's
     # off. The agent-level `show_sql_query` / `show_db_result` flags only control which

@@ -5,6 +5,11 @@ WORKDIR /app
 COPY requirements.txt /tmp/requirements.txt
 RUN pip install --no-cache-dir -r /tmp/requirements.txt
 
+# The BM25 encoder used to index high-cardinality values ships in the image, so the first
+# profiling job of a container does not download it (DA-MEM-002).
+ENV FASTEMBED_CACHE_PATH=/opt/fastembed_cache
+RUN python -c "from fastembed import SparseTextEmbedding; SparseTextEmbedding('Qdrant/bm25')"
+
 COPY . .
 
 ENV PYTHONPATH=/app

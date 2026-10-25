@@ -103,7 +103,15 @@ export async function streamSSERequest({
     let detail: string | undefined;
     try {
       const text = await response.text();
-      detail = safeParseJson(text)?.detail;
+      // `detail` is a sentence, or `{code, message, …}` when the service also
+      // names the case (a used-up free allowance, a rejected key).
+      const raw = safeParseJson(text)?.detail;
+      detail =
+        typeof raw === "string"
+          ? raw
+          : typeof raw?.message === "string"
+            ? raw.message
+            : undefined;
     } catch {
       // ignore body-read failures — fall back to a generic message
     }

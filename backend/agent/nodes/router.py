@@ -315,6 +315,7 @@ async def node_router(state: AgentState) -> AgentState:
         state, "router", execution_time, provider=provider, model=model_name,
         input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=tokens_used,
         key_type=key_type, errors=1 if router_failure_mode else 0,
+        cached_input_tokens=None if router_failure_mode else getattr(cb, "prompt_tokens_cached", 0),
     )
 
     # Record usage event (non-blocking)

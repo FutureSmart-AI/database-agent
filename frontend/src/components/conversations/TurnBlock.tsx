@@ -21,6 +21,7 @@ import { ttsEnabled, ttsUrl } from "@/platform/config";
 
 import { deriveTrace } from "./deriveTrace";
 import FullLogs from "./FullLogs";
+import ReportProblem from "./ReportProblem";
 import { restrictedTablesInAnswer } from "./restrictedTables";
 import ResultCard from "./ResultCard";
 import { readRunLog } from "./runLog";
@@ -212,7 +213,7 @@ export default function TurnBlock({
           {runLog && <FullLogs log={runLog} />}
 
           {!streaming && body && (
-            <div className="flex items-center gap-3 text-[11.5px]">
+            <div className="flex flex-wrap items-center gap-3 text-[11.5px]">
               <ChatFeedbackButtons
                 sessionId={sessionId}
                 chatId={String(get(message, "chat_id") ?? chatId)}
@@ -235,6 +236,13 @@ export default function TurnBlock({
                   onPlay={() => tts.play(spoken)}
                   onPause={tts.pause}
                   onResume={tts.resume}
+                />
+              )}
+              {!readOnly && nl2sqlServiceId && sessionId && (
+                <ReportProblem
+                  agentId={nl2sqlServiceId}
+                  sessionId={sessionId}
+                  chatId={String(get(message, "chat_id") ?? chatId)}
                 />
               )}
             </div>

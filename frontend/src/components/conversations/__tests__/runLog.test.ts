@@ -178,4 +178,54 @@ describe("formatting", () => {
     expect(formatCost(0.00004)).toBe("<$0.0001");
     expect(formatCost(0.0021)).toBe("$0.0021");
   });
+
+  describe("NL2SQL usage block", () => {
+    const usage = (overrides: Record<string, unknown> = {}) => ({
+      latency_ms: 18450,
+      input_tokens: 9100,
+      output_tokens: 1200,
+      estimated_cost_usd: 0.0213,
+      cost_complete: true,
+      price_table: "openai-standard-2026-10-25",
+      excludes: ["follow_up_suggestions"],
+      nodes: [
+        { node: "router", provider: "openai", model: "gpt-6-luna", input_tokens: 900, output_tokens: 40, latency_ms: 900, estimated_cost_usd: 0.00011 },
+        { node: "select_table", provider: "openai", model: "gpt-6.1-sol", input_tokens: 1500, output_tokens: 30, latency_ms: 2400, estimated_cost_usd: 0.0033 },
+        { node: "sql_gen", provider: "openai", model: "gpt-6.1-sol", input_tokens: 6000, output_tokens: 900, latency_ms: 12000, estimated_cost_usd: 0.021 },
+        { node: "sql_exec", latency_ms: 40, input_tokens: 0, output_tokens: 0, estimated_cost_usd: null },
+        { node: "final_answer", provider: "openai", model: "gpt-6-luna", input_tokens: 2200, output_tokens: 260, latency_ms: 3100, estimated_cost_usd: 0.00035 },
+      ],
+      ...overrides,
+    });
+
+    it("takes the run's latency, tokens and estimated cost, and costs each step", () => {
+      const log = logOf({ ...message(), usage: usage() });
+      expect(log?.totals).toEqual({
+        latencyMs: 18450,
+        totalTokens: 10300,
+        costUsd: 0.0213,
+        costEstimated: true,
+        costIncomplete: false,
+      });
+      const sql = log?.steps.find((step) => step.key === "sql");
+      expect(sql?.call).toMatchObject({ model: "gpt-6.1-sol", inputTokens: 6000, outputTokens: 900, costUsd: 0.021, estimated: true });
+      expect(log?.steps.find((step) => step.key === "tables")?.call).toMatchObject({ model: "gpt-6.1-sol", latencyMs: 2400 });
+      const answer = log?.steps.find((step) => step.key === "answer");
+      expect(answer?.label).toBe("Wrote the answer");
+      expect(answer?.call?.model).toBe("gpt-6-luna");
+    });
+
+    it("withholds a total that would count an unpriced model as free", () => {
+      const log = logOf({ ...message(), usage: usage({ cost_complete: false }) });
+      expect(log?.totals?.costUsd).toBeUndefined();
+      expect(log?.totals?.costIncomplete).toBe(true);
+      expect(log?.totals?.latencyMs).toBe(18450);
+    });
+
+    it("leaves a stored turn without usage as it was", () => {
+      const log = logOf(message());
+      expect(log?.totals?.costEstimated).toBeUndefined();
+      expect(log?.steps.some((step) => step.key === "answer")).toBe(false);
+    });
+  });
 });

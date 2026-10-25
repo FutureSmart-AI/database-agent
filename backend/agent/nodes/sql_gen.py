@@ -522,7 +522,7 @@ async def node_sql_gen(state: AgentState) -> AgentState:
     record_node_seconds(
         state, "sql_gen", execution_time, provider=provider, model=model_name,
         input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=tokens_used,
-        key_type=key_type,
+        cached_input_tokens=getattr(cb, "prompt_tokens_cached", 0), key_type=key_type,
     )
 
     # Record usage event
@@ -554,6 +554,12 @@ async def node_sql_gen(state: AgentState) -> AgentState:
     except (ValueError, TypeError):
         state.update(sql_query="", sql_error="SQL generation returned a malformed schema-support decision.",
                      db_result=[], db_columns=None, answerability_error=None)
+    if state.get("answerability_error"):
+        # The model's own reason is the only record of why a question was refused.
+        logger.warning(
+            "[sql_gen] answerable=false | request_id=%s | agent_id=%s | tables=%s | reason=%s",
+            state.get("request_id"), agent_id, tables, str(state["answerability_error"])[:500],
+        )
     logger.info(
         "[WF] step.end=sql_gen | request_id=%s | action=%s | exec_time=%.2fs | has_sql=%s",
         state.get("request_id"),

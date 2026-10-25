@@ -142,6 +142,30 @@ def _make_json_safe(value: Any) -> Any:
     return str(value)
 
 
+_DEFINITION_CHARS = int(os.getenv("FINAL_ANSWER_TABLE_DEFINITION_CHARS", "1500"))
+
+
+def table_definitions_for_answer(descriptions: Any, selected_tables: Any) -> str:
+    """The owner's descriptions of the tables this query read, for the answer prompt.
+
+    SQL generation reads them, the answer did not: the sample agent's definitions say amounts
+    are US dollars, yet answers said "the result does not specify a currency". Only the
+    tables the query was built from are included, each capped, so the prompt stays small.
+    """
+    if not isinstance(descriptions, dict) or not descriptions:
+        return "None provided."
+    tables = [t for t in (selected_tables or []) if isinstance(t, str)] or list(descriptions)
+    lines = []
+    for table in tables:
+        text_ = descriptions.get(table)
+        if text_ is None:
+            text_ = next((v for k, v in descriptions.items()
+                          if k.split(".")[-1].lower() == table.split(".")[-1].lower()), None)
+        if isinstance(text_, str) and text_.strip():
+            lines.append(f"- {table}: {text_.strip()[:_DEFINITION_CHARS]}")
+    return "\n".join(lines) or "None provided."
+
+
 @traceable(run_type="chain", name="node_final_answer")
 @track_time("Node: Final Answer")
 async def node_final_answer(state: AgentState) -> AgentState:
@@ -285,6 +309,8 @@ async def node_final_answer(state: AgentState) -> AgentState:
         "result": result_json,
         "user_info": "",
         "db_columns": columns_str,
+        "table_definitions": table_definitions_for_answer(
+            state.get("table_descriptions"), state.get("selected_tables")),
     }
 
     if pandas_result:
@@ -390,7 +416,7 @@ async def node_final_answer(state: AgentState) -> AgentState:
     record_node_seconds(
         state, "final_answer", execution_time, provider=provider, model=model_name,
         input_tokens=input_tokens, output_tokens=output_tokens, total_tokens=tokens_used,
-        key_type=key_type,
+        cached_input_tokens=getattr(cb, "prompt_tokens_cached", 0), key_type=key_type,
     )
 
     # Usage Tracking

@@ -512,13 +512,19 @@ def create_graph_agent_graph():
         }
     )
 
-    # Linear flow: pandas → validate → mapping → assembly → END
-    workflow.add_edge("invoke_pandas_agent", "validate_chart_type")
-    workflow.add_edge("validate_chart_type", "generate_mapping")
-    workflow.add_edge("generate_mapping", "assemble_graph")
+    # pandas → mapping → validate → assembly → END. Validation runs after the
+    # mapping because the mapping model names the plotted measures; when it
+    # corrects the chart type it clears the mapping and the graph re-maps once.
+    workflow.add_edge("invoke_pandas_agent", "generate_mapping")
+    workflow.add_edge("generate_mapping", "validate_chart_type")
+    workflow.add_conditional_edges(
+        "validate_chart_type",
+        lambda state: "generate_mapping" if state.get("graph_mapping_spec") is None and not state.get("error") else "assemble_graph",
+        {"generate_mapping": "generate_mapping", "assemble_graph": "assemble_graph"},
+    )
     workflow.add_edge("assemble_graph", END)
 
-    logger.info("Graph agent created with linear flow: route -> pandas -> validate -> mapping -> assembly")
+    logger.info("Graph agent created with flow: route -> pandas -> mapping -> validate -> assembly")
     return workflow.compile()
 
 
@@ -529,6 +535,13 @@ graph_agent_graph = create_graph_agent_graph()
 # ============================================================================
 # HELPER FUNCTION
 # ============================================================================
+
+# Message for an END the router reached from the data's shape alone, before
+# any LLM call (route_query's pre-LLM heuristic), which sets no response.
+NO_CHART_FOR_DATA_SHAPE = (
+    "No chart: the data has fewer than two rows to compare."
+)
+
 
 async def generate_graph_from_csv(
     csv_path: str, 
@@ -570,13 +583,17 @@ async def generate_graph_from_csv(
 
     result = await graph_agent_graph.ainvoke(initial_state)
 
-    # Handle direct responses (router decided action=END)
-    if result.get("action") == "END" and result.get("response"):
-        logger.info(f"Direct response from router")
-        # Return a dict with special marker
+    # Handle direct responses (router decided action=END). The router's own
+    # data-shape checks (empty, single scalar, single row) end the graph with
+    # response=None; that used to fall through to the chart path below and
+    # 500 on `graph_data.get` (None) — every 0/1-row CSV a caller sent came
+    # back "'NoneType' object has no attribute 'get'". No chart is the
+    # correct answer there, so it is a direct response like any other END.
+    if result.get("action") == "END":
+        logger.info("Direct response from router")
         return {
             "is_direct_response": True,
-            "response": result["response"],
+            "response": result.get("response") or NO_CHART_FOR_DATA_SHAPE,
             "chart_type": result.get("chart_type")
         }
     

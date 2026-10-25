@@ -14,6 +14,8 @@ from agent.nodes.sql_gen import node_sql_gen
 from agent.nodes.sql_exec import node_sql_exec
 from agent.nodes.final_answer import node_final_answer
 from agent.nodes.graph_agent_bridge import graph_agent_node
+from agent.utils.provider_key_scope import owner_key_scope
+from agent.utils.model_pricing import collect_llm_usage
 from logger import logger
 
 from agent.nodes.invoke_pandas import invoke_pandas_agent_node
@@ -172,6 +174,43 @@ app = build_graph()
 @traceable(run_type="chain", name="NL2SQL LangGraph")
 @track_time("NL2SQL: Full Flow")
 async def run_agent_flow(
+    query: str,
+    past_messages: Optional[List[Dict[str, Any]]],
+    table_descriptions: Optional[Dict[str, str]],
+    runtime_db_details: Optional[Dict[str, Any]],
+    selected_tables: Optional[List[str]] = None,
+    few_shot_examples: Optional[str] = None,
+    user_id: Optional[str] = None,
+    owner_id: Optional[str] = None,
+    agent_id: Optional[str] = None,
+    allowed_graphs: Optional[List[str]] = None,
+    include_graph_output: bool = False,
+    session_id: Optional[str] = None,
+    request_id: Optional[str] = None,
+    follow_up: bool = False,
+    chat_id: Optional[str] = None,
+) -> Dict[str, Any]:
+    # Every model and embedding call in the graph — including clients built with no
+    # explicit key — resolves against this owner's key policy. Bound before the first
+    # node, so a bring-your-own-key owner with no key fails before any model or source SQL.
+    # Every chat-model call of the run is also counted per model (model_pricing), so the
+    # answer's tokens and cost include calls no node records itself.
+    async with owner_key_scope(owner_id):
+        with collect_llm_usage() as llm_usage:
+            result = await _run_agent_flow(
+                query, past_messages, table_descriptions, runtime_db_details,
+                selected_tables=selected_tables, few_shot_examples=few_shot_examples,
+                user_id=user_id, owner_id=owner_id, agent_id=agent_id,
+                allowed_graphs=allowed_graphs, include_graph_output=include_graph_output,
+                session_id=session_id, request_id=request_id, follow_up=follow_up,
+                chat_id=chat_id,
+            )
+        if isinstance(result, dict):
+            result["llm_usage"] = llm_usage.snapshot()
+        return result
+
+
+async def _run_agent_flow(
     query: str,
     past_messages: Optional[List[Dict[str, Any]]],
     table_descriptions: Optional[Dict[str, str]],

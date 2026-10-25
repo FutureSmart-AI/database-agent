@@ -1,0 +1,52 @@
+{
+  "id": "DA-020",
+  "date_IST": "2026-10-25",
+  "classification": "Model configuration experiment through the real API; not a production model change",
+  "dataset": {
+    "name": "database-agent-model-eval",
+    "version": "v1",
+    "sha256": "d0e482ba25cda33dd0bc5d1df20c5f1972d1a8d751c1c76e48a7ce9504039a91",
+    "cases": 18,
+    "fixtures": {
+      "ecommerce": "Cedar Lane sample database (deploy/demo/ecommerce): 8 reference questions incl. one chart request, 1 unanswerable",
+      "clinic": "Riverbend Clinics (tests/evaluation/model_eval/fixtures/clinic): many-to-many clinician/location, shifts vs appointments grain, partial payments; 8 questions, 1 unanswerable"
+    },
+    "ground_truth": "Python over generated rows, equal to reference SQL on the loaded database before grading",
+    "langsmith_dataset": "database-agent-model-eval-v1-d0e482ba (18 examples)"
+  },
+  "configs": {
+    "recommended-v1": {"sha256": "ef5eeb803bfaf9ef0d0ff4d0239279bdb0f1ebdf0600779821aea4211a73682a", "sql_operations": "gpt-6.1-sol (Responses, reasoning low)", "light_operations": "gpt-6-luna"},
+    "luna-low-v1": {"sha256": "49d275ea53b04d03264e45f7fffa8cdfc786e472c3e55c50da6a092fd265b938", "sql_operations": "gpt-6-luna (Responses, reasoning low, 8192 output cap)", "light_operations": "gpt-6-luna"}
+  },
+  "grading": "LLM judge gpt-6.1-sol (reasoning medium, structured verdict) against ground truth; mechanical exact-table match kept as evidence; SQL re-executed as the read-only role; models used per node verified against the config (72/72 per run)",
+  "runs": [
+    {
+      "actions_run": "development repository CI run 40197885883 (private; link omitted)",
+      "git_sha": "ff1dd42e7229026638591993ac95a13e78ef57e7",
+      "repeats": 2,
+      "langsmith_experiments": ["recommended-v1-ff1dd42-f716e9bd", "luna-low-v1-ff1dd42-c1336b3c"],
+      "recommended-v1": {"correct": 35, "answers": 36, "sql_valid": 1.0, "latency_p50_ms": 9710, "latency_p95_ms": 16728},
+      "luna-low-v1": {"correct": 32, "answers": 36, "sql_valid": 1.0, "latency_p50_ms": 8222, "latency_p95_ms": 12544},
+      "cost_note": "Cost in this run is undercounted: table selection made an unrecorded model call (fixed in PR 109). Use run 2 for cost."
+    },
+    {
+      "actions_run": "development repository CI run 40200542724 (private; link omitted)",
+      "git_sha": "7efd49552a6ac3f78783ca590ace0a067a92ea83",
+      "repeats": 2,
+      "recommended-v1": {"correct": 35, "answers": 36, "sql_valid": 1.0, "latency_p50_ms": 11530, "latency_p95_ms": 20800, "mean_estimated_cost_usd": 0.0047, "cost_complete": true},
+      "luna-low-v1": {"correct": 33, "answers": 36, "sql_valid": 1.0, "latency_p50_ms": 10400, "latency_p95_ms": 13800, "mean_estimated_cost_usd": 0.0007, "cost_complete": true}
+    }
+  ],
+  "combined_accuracy": {"recommended-v1": "70/72 (97%)", "luna-low-v1": "65/72 (90%)"},
+  "where_the_cheaper_config_fails": [
+    "clinic_utilization_march 0/4: joins shifts to appointments before aggregating (fan-out), every utilization wrong",
+    "clinic_multi_clinician_patients 1/4: counts no-show appointments as 'seen' (358 instead of 328)"
+  ],
+  "where_the_baseline_fails": [
+    "ecom_monthly_revenue 2/4: gpt-6.1-sol appended LIMIT 10 to a 12-month question (DA-LIMIT-001; 17/36 baseline queries ended in LIMIT 10, 0/36 for gpt-6-luna)"
+  ],
+  "cost_breakdown_run2_recommended": {"sql_gen gpt-6.1-sol": 0.43, "select_table gpt-6.1-sol": 0.35, "invoke_pandas gpt-6.1-sol": 0.08, "other_calls gpt-6.1-sol": 0.04, "final_answer gpt-6-luna": 0.04},
+  "price_table": "openai-standard-2026-10-25 (backend/model_profiles/prices.json, verified 2026-10-25 from developers.openai.com/api/docs/pricing)",
+  "decision": "No production model change from one experiment. Luna is ~6.7x cheaper per answer and ~1 s faster at p50, but loses multi-grain aggregation and definition inference on the structurally different schema. Candidate next experiment: Sol for sql_generation only, Luna for table selection/db routing/pandas (table selection is 35% of baseline cost).",
+  "limits": ["18 questions, 2 synthetic schemas, 4 answers per case per config across two runs", "Latency measured on GitHub-hosted runners against the public OpenAI API; absolute values vary run to run (p50 9.7 s vs 11.5 s for the same config)", "Cost is a list-price estimate; embeddings and follow-up suggestions excluded", "OpenRouter not used: no OpenRouter credential was found in Secrets Manager, the repository or the workstation environment"]
+}

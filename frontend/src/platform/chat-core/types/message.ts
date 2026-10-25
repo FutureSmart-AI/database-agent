@@ -27,6 +27,11 @@ export interface Message {
    */
   trace_id?: string | null;
   is_answered?: boolean | null;
+  /**
+   * The run's latency, tokens and estimated cost, on a live answer only: the
+   * service does not store it, so a reloaded thread has none.
+   */
+  usage?: unknown;
   /** The thread this turn belongs to, as the service reported it. */
   session_id?: string | null;
   timestamp?: Date;

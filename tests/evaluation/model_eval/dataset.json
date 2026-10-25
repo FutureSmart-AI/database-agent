@@ -1,0 +1,45 @@
+{
+  "name": "database-agent-model-eval",
+  "version": "v1",
+  "about": "Questions asked through the real Database Agent API against two synthetic databases. Ground truth is computed twice (Python over the generated rows, and reference SQL on the loaded database) and the two must agree before any model is graded.",
+  "fixtures": {
+    "ecommerce": {
+      "builder": "deploy/demo/ecommerce/build.py",
+      "agent": "deploy/demo/ecommerce/agent.json",
+      "references": "deploy/demo/ecommerce/reference_answers.json",
+      "database": "sample_ecommerce",
+      "reader": "sample_ecommerce_reader"
+    },
+    "clinic": {
+      "builder": "tests/evaluation/model_eval/fixtures/clinic/build.py",
+      "agent": "tests/evaluation/model_eval/fixtures/clinic/agent.json",
+      "references": "tests/evaluation/model_eval/fixtures/clinic/reference_answers.json",
+      "database": "eval_clinic",
+      "reader": "eval_clinic_reader"
+    }
+  },
+  "cases": [
+    {"id": "ecom_top_customers", "fixture": "ecommerce", "reference": "Who are our top five customers by total spend?", "ordered": true},
+    {"id": "ecom_top_customers_chart", "fixture": "ecommerce", "reference": "Show a bar chart of the top five customers by total spend.", "ordered": true, "chart": true},
+    {"id": "ecom_monthly_revenue", "fixture": "ecommerce", "reference": "How did monthly revenue change across 2025?", "ordered": true},
+    {"id": "ecom_return_rate", "fixture": "ecommerce", "reference": "Which product categories have the highest return rate?", "ordered": true},
+    {"id": "ecom_return_reasons", "fixture": "ecommerce", "reference": "What are the most common reasons for returns?", "ordered": true},
+    {"id": "ecom_payment_share", "fixture": "ecommerce", "reference": "What share of orders was paid with each payment method?", "ordered": false},
+    {"id": "ecom_channel_aov", "fixture": "ecommerce", "reference": "Which acquisition channel brings customers with the highest average order value?", "ordered": true},
+    {"id": "ecom_cancelled_by_quarter", "fixture": "ecommerce", "reference": "How many orders were cancelled in each quarter of 2025?", "ordered": true},
+    {"id": "ecom_unsupported_rating", "fixture": "ecommerce", "supported": false,
+     "question": "What is the average customer star rating of our products?",
+     "definition": "The database has no ratings or reviews. A correct answer says this cannot be answered from the data and invents no rating."},
+    {"id": "clinic_no_show_rate", "fixture": "clinic", "reference": "clinic_no_show_rate"},
+    {"id": "clinic_lead_time", "fixture": "clinic", "reference": "clinic_lead_time"},
+    {"id": "clinic_idle_june", "fixture": "clinic", "reference": "clinic_idle_june"},
+    {"id": "clinic_utilization_march", "fixture": "clinic", "reference": "clinic_utilization_march"},
+    {"id": "clinic_new_patients", "fixture": "clinic", "reference": "clinic_new_patients"},
+    {"id": "clinic_outstanding_by_payer", "fixture": "clinic", "reference": "clinic_outstanding_by_payer"},
+    {"id": "clinic_top_services_collected", "fixture": "clinic", "reference": "clinic_top_services_collected"},
+    {"id": "clinic_multi_clinician_patients", "fixture": "clinic", "reference": "clinic_multi_clinician_patients"},
+    {"id": "clinic_unsupported_satisfaction", "fixture": "clinic", "supported": false,
+     "question": "What is the average patient satisfaction score for each clinician?",
+     "definition": "The database has no satisfaction or survey data. A correct answer says this cannot be answered from the data and invents no score."}
+  ]
+}

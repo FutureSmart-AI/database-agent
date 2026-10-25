@@ -111,7 +111,7 @@ class ProfileTests(unittest.TestCase):
         mapping = source_classes("chart_agent/utils/graph_mapper.py", {"FieldMapping", "MetadataConfig", "GraphMappingSpec"})["GraphMappingSpec"]
         cases = [("sql_agent.router", router, {"action": "sql_gen_node", "refined_query": "totals", "visualization_query": "bar", "response": ""}),
                  ("sql_agent.sql_generation", SQLQuerySchema, {"answerable": True, "generated_query": "SELECT region, SUM(amount) FROM orders GROUP BY region", "reason": "available"}),
-                 ("chart_agent.mapping", mapping, {"chart_type": "Bar Chart", "field_mappings": [], "metadata_config": {"title": "Totals"}, "reasoning": "two groups"}),
+                 ("chart_agent.mapping", mapping, {"chart_type": "Bar Chart", "field_mappings": [], "measure_columns": ["total"], "label_columns": ["region"], "metadata_config": {"title": "Totals"}, "reasoning": "two groups"}),
                  ("sql_agent.rephrase_answer", final, {"response": "North250; South200", "is_answered": True})]
         for operation, schema, answer in cases:
             with self.subTest(operation=operation):

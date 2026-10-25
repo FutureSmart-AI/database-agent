@@ -21,6 +21,7 @@ from sqlalchemy import func
 from sqlalchemy.ext.asyncio import AsyncSession
 from sqlmodel import select
 
+from agent.utils.provider_key_scope import deployment_default_source
 from chatbot_management.utils.owner_defaults import DEFAULT_LIMITS, default_config
 from logger import logger
 from models.sql_models import (
@@ -60,6 +61,7 @@ def _to_response(row: Nl2sqlOwnerConfig) -> Dict[str, Any]:
             "max_llm_tokens_per_month": row.max_llm_tokens_per_month,
             "max_queries_per_day": row.max_queries_per_day,
         },
+        "provider_key_source": row.provider_key_source or deployment_default_source(),
         "is_default": False,
     }
 
@@ -84,6 +86,7 @@ async def upsert_owner_config(
     tier_type: Optional[str] = None,
     base_tier: Optional[str] = None,
     limits: Optional[Dict[str, Optional[int]]] = None,
+    provider_key_source: Optional[str] = None,
     acting_user: Optional[str] = None,
     replace: bool = False,
 ) -> Dict[str, Any]:
@@ -115,7 +118,11 @@ async def upsert_owner_config(
         row.base_tier = defaults["base_tier"]
         for k, v in defaults["platform_limits"].items():
             setattr(row, k, v)
+        # Back to "follow the deployment default", not a frozen copy of today's default.
+        row.provider_key_source = None
 
+    if provider_key_source is not None:
+        row.provider_key_source = provider_key_source
     if tier_type is not None:
         row.tier_type = tier_type
     if base_tier is not None:

@@ -22,6 +22,7 @@ from typing import Any, Dict, List, Optional, Set
 
 from logger import logger
 from agent.utils.node_metrics import KEY_TYPE_MIXED, get_node_events
+from agent.utils.model_pricing import answer_usage, node_cost, price_table_version
 
 # Nodes that spend money/time, in graph order — used to order `nodes_used`.
 _NODE_ORDER = [
@@ -164,6 +165,13 @@ def _roll_up_nodes(node_events: List[Dict[str, Any]], result: Dict[str, Any]) ->
     # larger so a node we don't capture yet (db_router) can't shrink the total.
     state_tokens = int(result.get("total_tokens") or 0)
     tot_tok = max(tot_tok, state_tokens)
+    # The run-level count (model_pricing.collect_llm_usage) includes every model call,
+    # recorded by a node or not; the chat API's usage block reports the same totals.
+    llm_usage = result.get("llm_usage")
+    if isinstance(llm_usage, list) and llm_usage:
+        in_tok = sum(int(u.get("input_tokens") or 0) for u in llm_usage)
+        out_tok = sum(int(u.get("output_tokens") or 0) for u in llm_usage)
+        tot_tok = in_tok + out_tok
 
     answer_node = next((e for e in node_events if e.get("node_name") == "final_answer"), None)
     headline = answer_node or next((e for e in node_events if e.get("model")), None) or {}
@@ -198,6 +206,16 @@ def _ordered_nodes(node_events: List[Dict[str, Any]]) -> List[str]:
     names: Set[str] = {e.get("node_name") for e in node_events if e.get("node_name")}
     ordered = [n for n in _NODE_ORDER if n in names]
     return ordered + sorted(names - set(ordered))
+
+
+def _unrecorded_calls(node_events, result, latency_ms) -> List[Dict[str, Any]]:
+    """Model calls of the run that no node recorded, per model, priced like the nodes."""
+    usage = answer_usage(node_events, latency_ms, result.get("llm_usage"))
+    return [{"node_name": n["node"], "provider": n["provider"], "model": n["model"],
+             "input_tokens": n["input_tokens"], "cached_input_tokens": n["cached_input_tokens"],
+             "output_tokens": n["output_tokens"], "calls": n["calls"],
+             "estimated_cost_usd": n["estimated_cost_usd"], "price_table": price_table_version()}
+            for n in usage.get("nodes", []) if n.get("node") == "other_calls"]
 
 
 def build_query_event(
@@ -263,7 +281,11 @@ def build_query_event(
             "cost_complete": False,
             "retry_count": int(result.get("retry_count") or 0),
         },
-        "node_data": node_events,
+        # Each node also carries a list-price ESTIMATE from its recorded tokens (DA-COST-001:
+        # hosted has no LangSmith price). It stays out of metrics.cost_usd, which is reserved
+        # for the provider-priced figure, and names the price table it came from.
+        "node_data": [dict(e, estimated_cost_usd=node_cost(e), price_table=price_table_version())
+                      for e in node_events] + _unrecorded_calls(node_events, result, latency_ms),
     }
 
 

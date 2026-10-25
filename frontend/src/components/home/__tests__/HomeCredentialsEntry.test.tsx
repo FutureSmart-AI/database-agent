@@ -34,6 +34,22 @@ vi.mock("@/data/mutations", () => ({
   }),
 }));
 vi.mock("@/lib/fonts", () => ({ NL2SQL_FONT_CLASS: "font-test" }));
+const demo = vi.hoisted(() => ({
+  allowance: {
+    daily_limit: 5,
+    daily_used: 1,
+    daily_remaining: 4,
+    daily_resets_at: null as string | null,
+    total_limit: 20,
+    total_used: 1,
+    total_remaining: 19,
+    budget_open: true,
+  },
+}));
+vi.mock("@/data/demo", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@/data/demo")>()),
+  useDemoAllowance: () => ({ data: demo.allowance }),
+}));
 
 const wrapped = (node: ReactNode) =>
   render(<ToastProvider>{node}</ToastProvider>);

@@ -485,6 +485,12 @@ class Nl2sqlOwnerConfig(SQLModel, table=True):
     # NULL = unlimited. The default is 20; see the add_owner_query_cap migrations.
     max_queries_per_day: Optional[int] = Field(default=None)
 
+    # Whose provider keys pay for this owner's model calls: "own" (bring-your-own-key —
+    # a missing or invalid key is an error, never a platform fallback) or "platform"
+    # (the owner's key when stored, else the platform key). NULL = the deployment default,
+    # DEFAULT_PROVIDER_KEY_SOURCE. See agent/utils/provider_key_scope.py.
+    provider_key_source: Optional[str] = Field(default=None)
+
     # Whether NL2SQL is enabled for this owner at all.
     nl2sql_enabled: bool = Field(default=True)
     nl2sql_enabled_at: Optional[datetime] = Field(default=None)

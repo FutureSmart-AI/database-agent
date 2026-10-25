@@ -3,11 +3,17 @@
 interface FollowUpsProps {
   questions: string[];
   onPick: (question: string) => void;
+  /** No question can be sent right now, so none is suggested. */
+  disabled?: boolean;
 }
 
 /** The agent's suggested next questions, as dashed pills under an answer. */
-export default function FollowUps({ questions, onPick }: FollowUpsProps) {
-  if (!questions.length) return null;
+export default function FollowUps({
+  questions,
+  onPick,
+  disabled = false,
+}: FollowUpsProps) {
+  if (!questions.length || disabled) return null;
 
   return (
     <nav

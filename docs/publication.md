@@ -38,11 +38,24 @@ that each path is required, enabled or validated by the standalone installation.
 
 ## Distribution
 
-`docs/source-export.json` records exact source-file hashes and the approved project
-license. The manifest omits its own hash. `deploy/export_source.py` creates another
-source snapshot from the staged Git tree, omitting an existing manifest before
-regenerating it; project metadata does not change application behavior. Original
-font copyrights and OFL license notices remain separate from Apache-2.0.
+This repository is a release snapshot of FutureSmart AI's development repository, where
+the product — backend, frontend, MCP server, tests, evaluations and model configuration — is
+developed, reviewed and deployed. Each commit on `main` here is one release, produced by
+`deploy/publish_public.py`:
 
-The initial public release does not deploy production, enable hosted services,
-resume deferred feature queues, or expose private Git history.
+1. `deploy/export_source.py` archives one development commit, leaving out private
+   records, Git history and the hosted deployment, evaluation and publication workflows. It
+   refuses a snapshot that contains an environment file, a hosted workflow or a link to a
+   private repository.
+2. Before writing, the publisher checks that this repository still matches the manifest of
+   its last release. A file changed here directly stops the release until that change has
+   been brought into the development repository, so nothing is overwritten and nothing is
+   developed in two places.
+3. It replaces the files, writes `docs/source-export.json` (exact file hashes, the source
+   commit and the license; the manifest omits its own hash) and commits.
+
+A release is pushed to `main` by a FutureSmart maintainer; a repository ruleset lets no one
+else update `main`. Contributions are welcome as
+issues and pull requests (see `.github/CONTRIBUTING.md`); accepted changes reach `main`
+through the next release. Original font copyrights and OFL license notices remain separate
+from Apache-2.0.

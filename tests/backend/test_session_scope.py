@@ -1,7 +1,7 @@
 """Saved conversations stay on their agent and under their agent's answer visibility.
 
 1. A session this API created for agent B cannot be continued on agent A: refused before any
-   history read or model call. A session id the API never created (the platform
+   history read, allowance or model call. A session id the API never created (the platform
    chat service sends its own thread id) continues, with only this agent's turns as history —
    test_session_storage.py checks that scoping on real SQL.
 2. A replayed conversation applies the agent's `show_sql_query` / `show_db_result` exactly as
@@ -55,6 +55,9 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
         spec.loader.exec_module(self.schemas)
         self.history = AsyncMock(return_value={'past_messages': [], 'session_id': 'session-of-b'})
         self.flow = AsyncMock(return_value={'response': 'ok', 'is_answered': True})
+        self.reserve = AsyncMock()
+        self.cap = AsyncMock()
+        self.demo_user = None
         self.endpoint = load_function('api/v1/routers/chat.py', 'chat_with_agent',
             Path=Path, Query=Query, Depends=Depends, BackgroundTasks=BackgroundTasks,
             ChatRequest=self.schemas.ChatRequest, Request=Request,
@@ -63,14 +66,17 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
             JSONResponse=JSONResponse, uuid=uuid, asyncio=asyncio,
             get_agent_with_visibility=AsyncMock(return_value=(object(), True, True, True)),
             apply_agent_answer_settings=lambda *args: {}, get_owner_email_by_agent_id=AsyncMock(return_value='owner'),
-            enforce_query_cap=AsyncMock(),
+            enforce_query_cap=self.cap, demo_question_user=lambda *args: self.demo_user,
+            demo_audience=lambda auth: 'public',
+            reserve_demo_question_or_refuse=self.reserve, close_demo_question=AsyncMock(),
             ensure_session_belongs_to_agent=self.guard, get_past_messages_safe=self.history,
             get_agent_runtime_db=AsyncMock(return_value=({'db_id': 'db'}, 0)),
             run_agent_flow=self.flow, _generate_follow_up_safe=AsyncMock(return_value=None),
             maybe_upload_csv_export=AsyncMock(return_value=None), persist_chat_logs=AsyncMock(),
-            persist_health_event=AsyncMock(),
-            build_chat_response=lambda result, body, session_id, *rest: {'session_id': session_id,
-                                                                        'response': result['response']})
+            persist_health_event=AsyncMock(), _owner_credential_error=AsyncMock(return_value=None),
+            answer_usage=lambda *args: None, get_node_events=lambda result: [],
+            build_chat_response=lambda result, body, session_id, *rest, **options: {'session_id': session_id,
+                                                                                   'response': result['response']})
 
     async def ask(self, agent_id, session_id):
         body = self.schemas.ChatRequest(query='how many orders?', session_id=session_id)
@@ -80,13 +86,17 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
             return await self.endpoint(agent_id=agent_id, stream=False, body=body,
                                        auth={'auth_type': 'agent_api_key', 'agent_id': agent_id}, user={})
 
-    async def test_foreign_session_is_refused_before_history_or_model(self):
-        # The query-cap check before it only reads the owner's count; nothing is charged.
-        with self.assertRaises(HTTPException) as caught:
-            await self.ask('agent-a', 'session-of-b')
-        self.assertEqual(caught.exception.status_code, 404)
-        self.history.assert_not_awaited()
-        self.flow.assert_not_awaited()
+    async def test_foreign_session_is_refused_before_history_allowance_or_model(self):
+        for demo_user in (None, 'visitor@example.test'):
+            with self.subTest(demo_agent=bool(demo_user)):
+                self.demo_user = demo_user
+                with self.assertRaises(HTTPException) as caught:
+                    await self.ask('agent-a', 'session-of-b')
+                self.assertEqual(caught.exception.status_code, 404)
+                self.history.assert_not_awaited()
+                self.flow.assert_not_awaited()
+                self.reserve.assert_not_awaited()
+                self.cap.assert_not_awaited()
 
     async def test_session_id_the_api_never_created_continues_on_this_agent(self):
         # The platform chat service's own thread id: not refused; history is asked for this

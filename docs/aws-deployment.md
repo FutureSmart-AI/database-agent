@@ -116,8 +116,8 @@ durable keys, and recorded rollback revision. An unchanged schema needs no reset
 The image defaults to standalone login, matching the rendered API task:
 
 ```sh
-docker build -t "database-agent-ui:$RELEASE" frontend
-UI_CONTAINER=$(docker create "database-agent-ui:$RELEASE")
+docker build -t "database-agent-frontend:$RELEASE" frontend
+UI_CONTAINER=$(docker create "database-agent-frontend:$RELEASE")
 mkdir -p .private/ui
 docker cp "$UI_CONTAINER:/usr/share/nginx/html/." .private/ui/
 docker rm "$UI_CONTAINER"
@@ -142,10 +142,10 @@ maps exported `_next/` files there. Keep HTTPS/secure cookies and browser origin
 aligned. Invalidate only the product's page/legacy-route paths after promotion.
 
 For an existing FutureSmart SSO deployment, preserve its explicit hosted UI/API
-auth settings. The optional manual frontend workflows target that hosted mode;
-do not enable them unchanged for a new standalone-password installation. Legacy
-automatic deployment/ClickUp publication workflows remain frozen. The optional
-voice client setting is public browser configuration, never a provider key.
+auth settings (`NEXT_PUBLIC_AUTH_MODE=hosted`). FutureSmart's own hosted UI is built and
+promoted with these same scripts by its release workflow; a new standalone-password
+installation follows the steps above instead. The optional voice client setting is
+public browser configuration, never a provider key.
 
 ## Verify and roll back
 

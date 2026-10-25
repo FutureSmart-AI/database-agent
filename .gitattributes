@@ -9,3 +9,8 @@ internal/** export-ignore
 # Hosted operational actions do not belong to the standalone public snapshot.
 .github/workflows/frontend-deploy.yml export-ignore
 .github/workflows/frontend-rollback.yml export-ignore
+.github/workflows/model-evaluation.yml export-ignore
+.github/workflows/public-release.yml export-ignore
+# Agent instructions describe the private development and hosted release process.
+AGENTS.md export-ignore
+CLAUDE.md export-ignore

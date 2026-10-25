@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from fastapi.openapi.docs import get_swagger_ui_html
 from fastapi.openapi.utils import get_openapi
 from otel_tracing import SubAppRouteMiddleware
+from swaggers.public_root import docs_app_settings, swagger_page
 
 from batch_query_reports.router_internal import router as reports_internal_router
 from batch_query_reports.router_restful import router as reports_router
@@ -133,7 +133,8 @@ fastapi_metadata = [
 
 
 # Mini app that only exposes the main nl2sql routes and documentation
-nl2sql_docs_app = FastAPI(openapi_tags=fastapi_metadata)
+# Docs that work at /nl2sql/api and at the canonical public root (swaggers/public_root.py)
+nl2sql_docs_app = FastAPI(openapi_tags=fastapi_metadata, **docs_app_settings())
 nl2sql_docs_app.add_middleware(SubAppRouteMiddleware, mount_prefix="/nl2sql/api")
 
 nl2sql_docs_app.include_router(agents_router, tags=["NL2SQL Agents Resource"])
@@ -167,11 +168,7 @@ nl2sql_docs_app.include_router(reports_internal_router, include_in_schema=False)
 
 @nl2sql_docs_app.get("/docs", include_in_schema=False)
 async def nl2sql_swagger_ui():
-    return get_swagger_ui_html(
-        # Use a relative OpenAPI URL so the UI works regardless of the mount path
-        openapi_url="/nl2sql/api/openapi.json",
-        title="NL2SQL API",
-    )
+    return swagger_page("NL2SQL API")
 
 
 @nl2sql_docs_app.get("/openapi.json", include_in_schema=False)

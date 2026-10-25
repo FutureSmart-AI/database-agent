@@ -14,7 +14,8 @@ export const metadata: Metadata = {
   description:
     "Connect a database and get an agent that answers questions about it in plain English — with the SQL it ran, the rows it read and a chart, every time.",
   applicationName: "Database Agent by FutureSmart AI",
-  robots: "index, follow",
+  // The app is not a landing page: futuresmart.ai/solutions/database-agent is.
+  robots: "noindex, nofollow",
 };
 
 export const viewport: Viewport = {

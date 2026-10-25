@@ -75,6 +75,15 @@ overrides can assign their defaults independently. Legacy nested JSON remains
 readable; its `fallback` binding is only the old CSV presentation setting and
 does not authorize a fallback call. Invalid legacy options must be corrected.
 
+## Evaluating a configuration before changing it
+
+Put the candidate in `tests/evaluation/model_eval/configs/<name>.json` (the same format as
+this file) and run the **Model evaluation** workflow with it beside `recommended-v1`. It asks
+18 questions over two synthetic databases through the real API and reports accuracy against
+ground truth, SQL validity, latency and estimated cost per configuration; see
+[the evaluation README](../tests/evaluation/model_eval/README.md). Change the shipped profile
+only after repeated runs and a review of the failures.
+
 ## Another chat provider
 
 ```json

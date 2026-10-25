@@ -565,7 +565,13 @@ export function usageTotals(agents: Agent[]): UsageTotals {
   );
 }
 
-/** Tables an agent may read, summed across its databases. */
-export function includedTableCount(dbs: AgentDatabase[]): number {
-  return dbs.reduce((total, db) => total + db.included_table_count, 0);
+/**
+ * Tables an agent may read, summed across its databases; `null` when no
+ * database reports a count, so an unknown is never shown as "0 tables".
+ */
+export function includedTableCount(dbs: AgentDatabase[]): number | null {
+  const known = dbs
+    .map((db) => db.included_table_count)
+    .filter((count): count is number => typeof count === "number");
+  return known.length ? known.reduce((total, count) => total + count, 0) : null;
 }

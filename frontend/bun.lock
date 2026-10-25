@@ -3,7 +3,7 @@
   "configVersion": 1,
   "workspaces": {
     "": {
-      "name": "database-agent-ui",
+      "name": "database-agent-frontend",
       "dependencies": {
         "@hookform/resolvers": "^5.2.2",
         "@tailwindcss/typography": "^0.5.19",

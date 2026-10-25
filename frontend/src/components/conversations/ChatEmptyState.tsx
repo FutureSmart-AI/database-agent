@@ -7,12 +7,15 @@ interface ChatEmptyStateProps {
   databaseName?: string;
   suggestions: string[];
   onPick: (question: string) => void;
+  /** No question can be sent right now: the suggestions are shown, not offered. */
+  disabled?: boolean;
 }
 
 export default function ChatEmptyState({
   databaseName,
   suggestions,
   onPick,
+  disabled = false,
 }: ChatEmptyStateProps) {
   return (
     <div className="flex flex-1 flex-col items-center overflow-y-auto px-6 py-8">
@@ -49,7 +52,8 @@ export default function ChatEmptyState({
                   key={question}
                   type="button"
                   onClick={() => onPick(question)}
-                  className="cursor-pointer rounded-full border border-n2s-line bg-n2s-card px-3 py-2 text-[12.5px] font-medium text-n2s-ink-2 hover:border-n2s-pri hover:bg-n2s-pri-wash hover:text-n2s-pri-ink"
+                  disabled={disabled}
+                  className="cursor-pointer rounded-full border border-n2s-line bg-n2s-card px-3 py-2 text-[12.5px] font-medium text-n2s-ink-2 hover:border-n2s-pri hover:bg-n2s-pri-wash hover:text-n2s-pri-ink disabled:cursor-not-allowed disabled:opacity-55 disabled:hover:border-n2s-line disabled:hover:bg-n2s-card disabled:hover:text-n2s-ink-2"
                 >
                   {question}
                 </button>

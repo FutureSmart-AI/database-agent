@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef } from "react";
 
 import MessageBox from "@/platform/components/conversations/MessageBox";
 
@@ -9,6 +9,18 @@ interface ComposerProps {
   onChange: (value: string) => void;
   onSend: (meta?: { viaVoice?: boolean }) => void;
   voiceInputEnabled?: boolean;
+  /**
+   * Why no question can be sent right now (a used-up free allowance). The
+   * input is replaced by this note, so the reason is read before typing rather
+   * than after a refused run.
+   */
+  blockedNote?: string | null;
+  /**
+   * Bumped when a suggested question is put into the input: the input takes
+   * focus with the caret at the end, so Enter sends it. Without this, focus
+   * stayed on the suggestion button and Enter did nothing.
+   */
+  focusSignal?: number;
 }
 
 /**
@@ -25,8 +37,27 @@ export default function Composer({
   onChange,
   onSend,
   voiceInputEnabled,
+  blockedNote,
+  focusSignal = 0,
 }: ComposerProps) {
   const inputRef = useRef<{ focus: () => void }>({ focus: () => {} });
+
+  useEffect(() => {
+    if (focusSignal > 0) inputRef.current?.focus();
+  }, [focusSignal]);
+
+  if (blockedNote) {
+    return (
+      <div className="flex-none px-6 pt-3.5 pb-5">
+        <div
+          role="status"
+          className="mx-auto max-w-205 rounded-xl border border-n2s-line bg-n2s-card-2 px-4 py-3 text-center text-[12.5px] text-n2s-ink-2"
+        >
+          {blockedNote}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="flex-none px-6 pt-3.5 pb-5">

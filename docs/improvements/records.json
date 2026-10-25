@@ -366,6 +366,92 @@
         "publication": "Public fresh-history source release approved; publication outcome recorded separately",
         "project_license": "Apache-2.0 approved 22 October 2026 IST"
       }
+    },
+    {
+      "id": "DA-014",
+      "title": "Hosted bring-your-own-key uses the owner's key everywhere and fails clearly without it",
+      "date_IST": "2026-10-22",
+      "status": "released",
+      "research_source": "Maintainer hosted-operation assessment; no benchmark run",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "On the hosted service, table selection, setup description jobs, chart post-processing and embedding clients built provider clients without the owner's key, so they used the platform environment key; a missing or unreadable owner key also fell back to the platform key, and the few-shot store swallowed credential errors into the platform key. A browser session could also name another owner's email on the credential routes.",
+      "root_cause": "Verified in source: key resolution was opt-in per call site and the factory defaulted to environment keys; owner resolution only translated 'me'.",
+      "engineering_decision": "Make the key source an explicit per-owner setting (own | platform, deployment default for unset owners), bind the owner's keys once per request or setup job, and route every environment key read through that binding. Preserve standalone and existing platform-managed owners unchanged. Limit browser sessions to their own credentials. No new authentication system, RBAC framework, prompt or model change.",
+      "implementation": "backend/agent/utils/provider_key_scope.py; nl2sql_owner_config.provider_key_source (migration add_owner_provider_key_source records every existing agent owner as platform); canonicalize_legacy_table_flags converts exact legacy 1/0 table-visibility flags to the booleans the strict access policy reads, leaving malformed or empty maps to fail closed. Coded errors provider_key_missing/invalid/unreadable/rejected/unbound.",
+      "validation": "87 backend tests in the Linux API image plus 12 deployment checks; the new key tests fail when the old factory environment read is restored. Migrations dry-run on hosted metadata in a rolled-back transaction, then applied after a cluster snapshot. Hosted journey with the existing user, a new agent, a temporary inference-scoped key and a SELECT-only synthetic four-order fixture: setup without a key failed with the missing-key message; with the key, UI description and table setup, one question returned the exact SQL, two rows (South 200, North 250) and a bar chart; the saved conversation reopened intact; logs showed only owner-key use and OpenAI usage attributed requests only to the temporary key; after removing the key in the UI the next question failed with the clear message before any model call or SQL. A platform-sourced owner still answered via the platform key. Temporary key, service account, agent, fixture and network rule were removed.",
+      "limits": "One positive and one negative UI question; a platform-path API control question. Hosted UI remains release 83c0727 and some credential copy still describes platform fallback. Agents without any table-visibility record fail closed until their owner reviews visibility. Not a benchmark run; historical verdicts unchanged.",
+      "code_and_tests": [
+        "backend/agent/utils/provider_key_scope.py",
+        "backend/agent/utils/owner_credential_utils.py",
+        "backend/agent/utils/model_profiles.py",
+        "backend/agent/runner.py",
+        "backend/api/v1/routers/credentials.py",
+        "backend/migrations/versions/add_owner_provider_key_source.py",
+        "backend/migrations/versions/canonicalize_legacy_table_flags.py",
+        "tests/backend/test_provider_key_scope.py"
+      ],
+      "validation_stages": {
+        "implementation": "merged to private main",
+        "deployment": "hosted production, task revision 195",
+        "hosted_UI_journey": "passed for the bounded one-positive/one-negative flow",
+        "historical_verdicts": "unchanged"
+      }
+    },
+    {
+      "id": "DA-018",
+      "title": "Saved conversations stay on their agent and under its answer settings",
+      "date_IST": "2026-10-23",
+      "status": "released",
+      "research_source": "Maintainer security review after the MCP adapter (public PR 6); no benchmark run",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "Chat history and saved replay were read by session_id alone, so a caller allowed to use agent A could pass a session id from agent B and have B's questions and answers replayed into A's model context and appended to B's session. Saved replay returned SQL and rows for agents set to hide them (show_sql_query / show_db_result applied only to live answers), CSV export ignored show_db_result, an agent key could export another agent's turn through a caller-chosen agent_id, and feedback could rewrite another agent's stored verdict and SQL.",
+      "root_cause": "Verified in source: the ChatLogs reads behind history, replay, export lookup and feedback filtered by session_id (and chat_id) only; the visibility flags were applied in build_chat_response alone.",
+      "engineering_decision": "Put the isolation in the reads, not in a session-ownership gate: every read of a conversation's turns filters on the requesting agent, and a session this API created for another agent is refused (404) before allowance, history or model. A session id the API never created (the platform chat service sends its own thread id; 4,972 such sessions measured on hosted) continues with this agent's turns only - a strict 404 for unknown ids, as first ported from public PR 6, was rejected in independent review because it would have broken that service. Replay applies the same visibility flags as live chat at the API; get_session_data requires agent_id and both flags. No new authentication framework, model, prompt or SQL change.",
+      "implementation": "backend/api/v1/utils/chat_helper.py (ensure_session_belongs_to_agent, get_past_conversation_safe, get_chat_log_for_export, get_session_messages_data); backend/session/db_utils/session_db_utils.py (get_session_agent_ids, get_session_data, add_user_feedback); backend/api/v1/routers/chat.py, sessions.py; backend/api/v1/utils/feedback_helper.py. Same design in public FutureSmart-AI/database-agent PR 7.",
+      "validation": "tests/backend/test_session_scope.py (13, offline) and tests/backend/test_session_storage.py (6, the product queries on real PostgreSQL, including one thread id shared by two agents); each part removed in turn turns a suite red. Independent review: first REJECT (chat-service ids), then ACCEPT WITH NOTES. Hosted, task definition 205, image main-7e8defe, two temporary synthetic agents on the read-only Cedar Lane data (one showing SQL/rows, one hiding them): 30 of 30 checks - foreign session 404 in 0.28 s (stream false) and 0.53 s (stream true) and on the session-messages route with nothing written to the other session; own follow-up and a chat-service thread id continue, the second agent on the shared thread read 0 history messages; replay and messages routes, with the agent key and the master key, follow the flags; export 200 visible, 403 hidden, 404 for another agent's turn; 403 cross-agent key, 401 unknown key; MCP stdio journey (list, ask, follow-up, saved conversation, foreign session 404). The free sample-data agent answered, narrowed in a follow-up and replayed both turns with SQL and rows. Temporary agents deleted and the temporary owner returned to its own key.",
+      "limits": "Role checks are off for signed-in callers, so isolation is per agent, not per user: holding another user's session uuid on the same agent still allows continuing or replaying it. CSV export for signed-in and master-key callers is not agent-scoped (uuid-gated). Analytics endpoints show logged SQL to agent users. The 3 log rows from 2025 with no agent no longer replay.",
+      "code_and_tests": "private PR 98 (7e8defe); public PR 7 (a6b6c33)",
+      "validation_stages": {
+        "implementation": "merged to private main",
+        "deployment": "hosted production, task revision 205",
+        "hosted_API_journey": "30/30 checks with synthetic agents, sessions and data",
+        "historical_verdicts": "unchanged"
+      }
+    },
+    {
+      "id": "DA-019",
+      "title": "The public API lives at futuresmart.ai/database-agent/api",
+      "date_IST": "2026-10-24",
+      "status": "released",
+      "research_source": "Product URL strategy (one FutureSmart identity, no product subdomains); no benchmark run",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "The public API root was the application host (app.futuresmart.ai/nl2sql/api; the Share page printed agent.futuresmart.ai/nl2sql/api). The default API docs page built absolute /nl2sql/api URLs from the mount, so it could not work under any other root. The hosted app pages declared robots index, follow.",
+      "root_cause": "Verified in source and on live: FastAPI's default docs_url page and openapi servers derive from the mount's root_path; the repository's own relative /docs route was shadowed by it.",
+      "engineering_decision": "Expose the canonical root as an nginx location on the futuresmart.ai web server (written by the website's deploy script, raw request URI forwarded, buffering off) that forwards through app.futuresmart.ai to the same ECS service: no second backend, no new auth, /nl2sql/api unchanged. The docs app turns the default page off, loads openapi.json by a relative URL and names PUBLIC_API_ROOT as its server when set. App pages noindex at the edge (CloudFront X-Robots-Tag) and in the page meta.",
+      "implementation": "backend/swaggers/public_root.py, backend/swaggers/nl2sql.py; task definition env PUBLIC_API_ROOT. Elsewhere: FutureSmart-AI/futuresmart-website PRs 106 (routing) and 107 (landing samples, MCP); database-agent-ui PR 9; document-intelligence-ui PR 6; database-agent PR 8 (docs); CloudFront response-headers policy fs-app-noindex on E2LZUHAF1FR08.",
+      "validation": "tests/backend/test_public_api_root.py (4). Hosted, task definition 209 (main-dbcd415), temporary synthetic agents through https://futuresmart.ai/database-agent/api: the production journey's isolation, replay-setting, key-scope and MCP stdio checks all pass; streamed answer's first chunk 1.8 s before the end (legacy root 2.0 s); CSV export 200 through both roots for a 120-row turn (a 10-row turn has no file by the 50-row rule on both roots); a conversation made through the new root replays through /nl2sql/api; encoded paths (%2F, %20, +, //) forwarded byte for byte. Signed-in hosted UI: Share page prints the new root; a saved conversation replays with SQL and rows.",
+      "limits": "Requests through the new root reach CloudFront from the website server's address, so the app distribution's per-IP WAF rate rule (Count mode today) would see them as one client if it were switched to Block. Document Intelligence chat through its new root was not exercised end to end (authenticated reads were).",
+      "code_and_tests": "private PR 103 (dbcd415)",
+      "validation_stages": {
+        "implementation": "merged to private main",
+        "deployment": "hosted production, task revision 209",
+        "hosted_API_journey": "through the new root with synthetic agents, sessions and data",
+        "historical_verdicts": "unchanged"
+      }
+    },
+    {
+      "id": "DA-020",
+      "title": "Model evaluation through the real API, and per-answer latency and cost",
+      "date_IST": "2026-10-25",
+      "status": "released",
+      "research_source": "Model evaluation and optimisation initiative (accuracy, latency, cost of model configurations)",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "No repeatable way to compare model configurations on ground truth; hosted answers carried no cost (DA-COST-001) and table selection's model call was never counted.",
+      "root_cause": "Cost depended on LangSmith pricing, which is off on hosted; per-node metrics covered only the nodes that recorded themselves.",
+      "engineering_decision": "Evaluate through the existing chat API and Compose stack (no separate SQL agent or service); grade with an LLM judge against twice-computed ground truth; estimate cost from recorded tokens and a dated price table, with totals from a run-level callback so uninstrumented calls cannot disappear.",
+      "implementation": "tests/evaluation/model_eval; .github/workflows/model-evaluation.yml; backend/agent/utils/model_pricing.py; backend/model_profiles/prices.json; node_metrics.measure_node_calls; chat usage block; Full logs panel. PRs 107, 108, 109.",
+      "verification": "Actions runs 40197885883 and 40200542724; hosted task definition nl2sql-agent:214 returns usage with select_table and other_calls; health event node_data carries the estimates.",
+      "evidence": "docs/improvements/evidence/2026-10-25-model-evaluation.json"
     }
   ],
   "current_published_results_index": "published-results.json"

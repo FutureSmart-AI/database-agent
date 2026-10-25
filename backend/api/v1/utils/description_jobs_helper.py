@@ -109,7 +109,8 @@ def _inspect_schema_sync(db_details: Dict[str, Any]) -> str:
         if i < _SAMPLE_TABLES and cols:
             try:
                 first_col = cols[0]["column_name"]
-                samples = get_unique_values_for_columns({"db_details": db_details}, t, [first_col])
+                samples = get_unique_values_for_columns({"db_details": db_details}, t, [first_col],
+                                                        limit=_SAMPLE_ROWS)
                 vals = samples.get(first_col, [])[:_SAMPLE_ROWS]
                 if vals:
                     lines.append(f"    sample {first_col}: {', '.join(str(v) for v in vals)}")
@@ -118,9 +119,21 @@ def _inspect_schema_sync(db_details: Dict[str, Any]) -> str:
     return "\n".join(lines)
 
 
-def _build_llm():
+async def _build_llm(agent_id: str):
+    """The description model, paid for by the AGENT OWNER's key policy.
+
+    Setup runs outside any chat request, so nothing else binds the owner here: without the
+    owner's key a bring-your-own-key workspace would have its setup billed to the platform.
+    A missing or invalid key raises a ProviderCredentialError whose message the job records.
+    """
     from agent.utils.model_profiles import operation_config, build_chat_model
-    return build_chat_model(operation_config("descriptions.default"))
+    from agent.utils.owner_credential_utils import get_owner_api_key_for_provider
+    from chatbot_management.db_utils.bot_crud_db_utils import get_owner_email_by_agent_id
+
+    conf = operation_config("descriptions.default")
+    owner_id = await get_owner_email_by_agent_id(agent_id)
+    api_key = await get_owner_api_key_for_provider(owner_id, conf["provider"])
+    return build_chat_model(conf, api_key=api_key)
 
 
 async def _apply_description_to_db(agent_id: str, db_id: str, description: str,
@@ -151,7 +164,9 @@ async def _apply_description_to_db(agent_id: str, db_id: str, description: str,
 async def _run_generation(agent_id: str, db_id: str, job_id: str, db_details: Dict[str, Any],
                           apply_to_db: bool = False, overwrite: bool = False) -> None:
     try:
-        schema_text = await asyncio.to_thread(_inspect_schema_sync, db_details)
+        from agent.utils.heavy_work_gate import heavy_work
+        async with heavy_work(f"desc-job {job_id} agent={agent_id} db={db_id}"):
+            schema_text = await asyncio.to_thread(_inspect_schema_sync, db_details)
         prompt = (
             "Write a concise description of this database that will be used to ROUTE "
             "natural-language questions to the correct database among several. For routing to "
@@ -169,7 +184,7 @@ async def _run_generation(agent_id: str, db_id: str, job_id: str, db_details: Di
             f"Database name: {db_details.get('db_name')}\n"
             f"Tables and columns:\n{schema_text}\n\nDescription:"
         )
-        llm = _build_llm()
+        llm = await _build_llm(agent_id)
         resp = await llm.ainvoke(prompt)
         description = response_text(resp)
         await _set_job(job_id, status="done", description=description)
@@ -242,6 +257,7 @@ async def get_table_description_job(agent_id: str, db_id: str, job_id: str) -> D
 async def _run_table_generation(agent_id: str, db_id: str, job_id: str, db_details: Dict[str, Any],
                                 overwrite: bool = False) -> None:
     try:
+        from agent.utils.heavy_work_gate import heavy_work
         from api.v1.utils.columns_helper import get_table_columns_from_db
         from api.v1.utils.tables_helper import get_all_agent_table_descriptions
         from knowledge.db_utils.table_description_db_utils import get_table_names_from_db
@@ -249,7 +265,6 @@ async def _run_table_generation(agent_id: str, db_id: str, job_id: str, db_detai
 
         existing_rows = await get_all_agent_table_descriptions(agent_id, db_id=db_id)
         existing = {r["table_name"]: (r.get("description") or "") for r in existing_rows}
-        include_flags = {r["table_name"]: r.get("is_included", True) for r in existing_rows}
 
         def _introspect():
             tables = get_table_names_from_db({"db_details": db_details}) or []
@@ -261,12 +276,13 @@ async def _run_table_generation(agent_id: str, db_id: str, job_id: str, db_detai
                     schema[t] = []
             return tables, schema
 
-        tables, schema = await asyncio.to_thread(_introspect)
+        async with heavy_work(f"tbl-desc-job {job_id} agent={agent_id} db={db_id}"):
+            tables, schema = await asyncio.to_thread(_introspect)
         if not tables:
             await _set_job(job_id, status="failed", error="No tables found in this database")
             return
 
-        llm = _build_llm()
+        llm = await _build_llm(agent_id)
         sem = asyncio.Semaphore(_TABLE_GEN_CONCURRENCY)
 
         async def _gen_one(table: str):
@@ -289,18 +305,17 @@ async def _run_table_generation(agent_id: str, db_id: str, job_id: str, db_detai
 
         generated = dict(await asyncio.gather(*[_gen_one(t) for t in tables]))
 
-        # Save descriptions for ALL tables (blank string for any that produced nothing), preserving
-        # each table's include/exclude flag. Mirrors tables_helper.create_agent_table_descriptions.
-        description_final = [{t: (generated.get(t) or "")} for t in tables]
-        entry_flags = {t: include_flags.get(t, True) for t in tables}
-        db_res = await table_description_db_utils.upload_to_db_table_description(
-            None, agent_id, "", "", description_final, entry_flags, db_id=db_id
+        # Save descriptions for ALL tables (blank string for any that produced nothing). The
+        # record is re-read under a lock and anything written while the model was running is
+        # kept, with the stored include/exclude flags (DA-DESC-RACE-001).
+        db_res = await table_description_db_utils.save_generated_table_descriptions(
+            agent_id, db_id, existing, generated, tables
         )
         if not (db_res and db_res.get("status")):
             await _set_job(job_id, status="failed", error="Failed to save generated table descriptions")
             return
 
-        filled = sum(1 for d in description_final for v in d.values() if (v or "").strip())
+        filled = sum(1 for t in tables if (generated.get(t) or "").strip())
         await _set_job(job_id, status="done",
                        description=f"Generated descriptions for {filled}/{len(tables)} tables")
         logger.info(f"[tbl-desc-job] {job_id} done for agent={agent_id} db={db_id} "
@@ -345,38 +360,18 @@ async def generate_single_table_description(agent_id: str, db_id: str, table_nam
         _TABLE_PROMPT_INTRO +
         f"Database: {db_details.get('db_name')}\nTable: {table_name}\nColumns: {col_str}\n\nDescription:"
     )
-    llm = _build_llm()
+    llm = await _build_llm(agent_id)
     resp = await llm.ainvoke(prompt)
     description = response_text(resp)
 
-    def _parse(v):
-        if isinstance(v, str):
-            try:
-                return json.loads(v)
-            except Exception:
-                return []
-        return v or []
-
-    # Upsert ONLY this table into the per-DB record; preserve every other table + all flags.
-    db = await table_description_db_utils.list_table_description_from_db(None, agent_id, db_id=db_id)
-    rec = db.get("record") if db else None
-    desc_list = _parse(rec.description) if rec else []
-    flags = rec.entry_flags if (rec and isinstance(rec.entry_flags, dict)) else (_parse(rec.entry_flags) if rec else {})
-    if not isinstance(flags, dict):
-        flags = {}
-    found = False
-    for item in desc_list:
-        if isinstance(item, dict) and table_name in item:
-            item[table_name] = description
-            found = True
-            break
-    if not found:
-        desc_list.append({table_name: description})
-    flags.setdefault(table_name, 1)
-
-    db_res = await table_description_db_utils.upload_to_db_table_description(
-        None, agent_id, (rec.file_name if rec else "") or "", (rec.url if rec else "") or "",
-        desc_list, flags, db_id=db_id,
+    # Only this table changes; every other table and all flags are re-read under a lock and
+    # kept, so a description written meanwhile for another table is not lost.
+    current = await table_description_db_utils.list_table_description_from_db(None, agent_id, db_id=db_id)
+    rec = current.get("record") if current else None
+    started = table_description_db_utils._description_map(rec.description) if rec else {}
+    db_res = await table_description_db_utils.save_generated_table_descriptions(
+        agent_id, db_id, started, {table_name: description},
+        list(dict.fromkeys(list(started) + [table_name])),
     )
     if not (db_res and db_res.get("status")):
         raise HTTPException(status_code=500, detail="Failed to save generated table description")

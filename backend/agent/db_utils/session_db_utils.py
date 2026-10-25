@@ -51,6 +51,23 @@ async def log_new_session(user_id, agent_id, user_query):
 		logger.error(f"Error logging new session: {e}")
 		raise
 
+def chat_log_history(rows):
+	"""Conversation context for the model, oldest first.
+
+	A turn the agent did not answer keeps its question but not its reply: the
+	refusal says nothing about the schema, and replaying it made the next turn
+	refuse a question the schema supports (DA-ANSWERABILITY-001). Each turn
+	decides schema support again.
+	"""
+	messages = []
+	for chat_log in rows:
+		if chat_log.user_query:
+			messages.append({"role": "user", "content": chat_log.user_query})
+		if chat_log.gpt_response and chat_log.is_answered is not False:
+			messages.append({"role": "assistant", "content": chat_log.gpt_response})
+	return messages
+
+
 async def get_past_conversation(session_id):
 	try:
 		start_time = time.time()
@@ -60,13 +77,7 @@ async def get_past_conversation(session_id):
 				select(ChatLogs).where(ChatLogs.session_id == session_id).order_by(ChatLogs.created_at)
 			)
 			rows = res.scalars().all()  # Use scalars() to get objects directly, not tuples
-			for chat_log in rows:
-				if chat_log.user_query:
-					message_user = {"role": "user", "content": chat_log.user_query}
-					messages.append(message_user)
-				if chat_log.gpt_response:
-					message_assistant = {"role": "assistant", "content": chat_log.gpt_response}
-					messages.append(message_assistant)
+			messages.extend(chat_log_history(rows))
 		elapsed_time = time.time() - start_time
 		logger.info(f"History For Context(get_conversation):{messages}, elapsed_time: {elapsed_time}")
 		return messages

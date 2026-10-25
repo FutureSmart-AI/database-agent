@@ -29,10 +29,6 @@ class QdrantFewShotStore:
         if not all([OPENAI_API_KEY, QDRANT_URL]):
             raise ValueError("Missing required environment variables: OPENAI_API_KEY, qdrant_url")
 
-        self.embedding_function = OpenAIEmbeddings(
-            model=FEWSHOT_EMBEDDING_MODEL,
-            api_key=OPENAI_API_KEY
-        )
         self.collection_name = "few-shot-examples"
         self.client = make_async_qdrant_client(
             url=QDRANT_URL,
@@ -40,6 +36,14 @@ class QdrantFewShotStore:
             timeout=10,
         )
         
+    @property
+    def embedding_function(self) -> OpenAIEmbeddings:
+        """Built per use, not once at startup: the key is the bound owner's on a
+        bring-your-own-key workspace, and the environment key otherwise."""
+        from agent.utils.provider_key_scope import env_key_for
+        return OpenAIEmbeddings(model=FEWSHOT_EMBEDDING_MODEL,
+                                api_key=env_key_for("openai", "OPENAI_API_KEY"))
+
     async def initialize(self):
         """Initialize the Qdrant collection for few-shot examples."""
         try:

@@ -101,16 +101,14 @@ class QdrantFewShotStore:
             from agent.utils.owner_credential_utils import get_owner_api_key_for_provider
             embedding_model = FEWSHOT_EMBEDDING_MODEL
             provider = "openai"
-            api_key_to_use = OPENAI_API_KEY
-            key_type = "platform-key"
-            try:
-                if owner_id:
-                    key, source = await get_owner_api_key_for_provider(owner_id, provider, return_source=True)
-                    if key:
-                        api_key_to_use = key
-                        key_type = source or "owner-key"
-            except Exception:
-                key_type = "platform-key"
+            # The owner's key policy decides, and its errors propagate: swallowing them here
+            # used to re-select the platform key for a bring-your-own-key owner.
+            if owner_id:
+                api_key_to_use, key_type = await get_owner_api_key_for_provider(
+                    owner_id, provider, return_source=True)
+            else:
+                from agent.utils.provider_key_scope import env_key_for
+                api_key_to_use, key_type = env_key_for(provider, "OPENAI_API_KEY"), "platform-key"
             embedding_function = OpenAIEmbeddings(model=embedding_model, api_key=api_key_to_use)
 
             # Generate embedding for the example
@@ -332,16 +330,14 @@ class QdrantFewShotStore:
             from agent.utils.owner_credential_utils import get_owner_api_key_for_provider
             embedding_model = FEWSHOT_EMBEDDING_MODEL
             provider = "openai"
-            api_key_to_use = OPENAI_API_KEY
-            key_type = "platform-key"
-            try:
-                if owner_id:
-                    key, source = await get_owner_api_key_for_provider(owner_id, provider, return_source=True)
-                    if key:
-                        api_key_to_use = key
-                        key_type = source or "owner-key"
-            except Exception:
-                key_type = "platform-key"
+            # The owner's key policy decides, and its errors propagate: swallowing them here
+            # used to re-select the platform key for a bring-your-own-key owner.
+            if owner_id:
+                api_key_to_use, key_type = await get_owner_api_key_for_provider(
+                    owner_id, provider, return_source=True)
+            else:
+                from agent.utils.provider_key_scope import env_key_for
+                api_key_to_use, key_type = env_key_for(provider, "OPENAI_API_KEY"), "platform-key"
             embedding_function = OpenAIEmbeddings(model=embedding_model, api_key=api_key_to_use)
 
             start_time = time.time()
