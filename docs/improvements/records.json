@@ -466,6 +466,20 @@
       "implementation": "frontend/ (UI PRs 6-9), mcp-server/, tests/mcp, saved-replay result block; .github/workflows/frontend-deploy.yml; deploy/export_source.py and deploy/publish_public.py; .github/workflows/public-release.yml; AGENTS.md.",
       "verification": "Hosted interface release 8f8a34c and API task definition 216; public-API-root journey on the sample-data agent; public release 829922f with its full check suite passing.",
       "evidence": "docs/improvements/evidence/2026-10-25-single-development-repository.json"
+    },
+    {
+      "id": "DA-022",
+      "title": "Full logs reports every operation an answer paid for, including on saved conversations",
+      "date_IST": "2026-10-26",
+      "status": "released",
+      "research_source": "Hosted walkthrough after DA-021, not a benchmark finding",
+      "historical_benchmark_result": "All original verdicts unchanged",
+      "observed_failure": "Full logs listed 3 of 7 operations, named the model on one step, and showed no usage on a reopened conversation.",
+      "root_cause": "The UI read only node events it knew by name, and the usage block returned with the answer was not stored with the turn.",
+      "engineering_decision": "Store the usage block the answer returned with the turn and return it on replay; list every usage node in the UI, labelling known ones and keeping unknown ones by service name, so the table always sums to the total.",
+      "implementation": "backend/api/v1/routers/chat.py, backend/api/v1/utils/chat_helper.py, backend/session/db_utils/session_db_utils.py, frontend/src/components/conversations/runLog.ts and FullLogs.tsx, frontend/src/data/nl2sqlChat.ts; release build base image via ARG PYTHON_IMAGE and deploy/codebuild/api-buildspec.yml.",
+      "verification": "PR 116 (f3dc5298) live: frontend release f3dc5298, API task definitions 217 and 218; Cost by operation verified on a live answer and a reopened conversation; public release 3be66a0 with its full check suite passing.",
+      "evidence": "docs/improvements/evidence/2026-10-26-full-logs-and-cleanup.json"
     }
   ],
   "current_published_results_index": "published-results.json"

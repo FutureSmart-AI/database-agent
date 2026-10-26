@@ -732,3 +732,31 @@ column-labelled rows, a problem report with its conversation snapshot, and the M
 the hosted API. The hosted interface serves the new release with every feature above. The
 public release passed its own complete check suite. Evidence:
 `docs/improvements/evidence/2026-10-25-single-development-repository.json`.
+
+## DA-022 — Full logs shows every operation; last outside copy of the UI removed (2026-10-26 IST)
+
+A signed-in walkthrough of the hosted interface after DA-021 (sample data, an answer, follow-ups,
+a reopened conversation, Report a problem, Share → API) found one defect: Full logs listed three
+of the seven operations an answer paid for, named the model on one step only, and showed no usage
+on a reopened conversation. The interface read only the steps it knew by name, and the usage block
+was returned with the answer but not stored with it. The usage block is now stored with each turn
+and returned on saved replay, and Full logs lists every operation with its model, time, tokens and
+estimated cost under a total that matches the answer.
+
+The release build's base image also moved twice. Docker Hub refused CodeBuild's anonymous pulls,
+and the first fix (AWS's public mirror) was wrong to claim the mirror had no anonymous limit: it
+throttled GitHub's runners. The Dockerfile now takes the base image as a build argument; the
+release build, defined in `deploy/codebuild/api-buildspec.yml`, logs in to the mirror and passes
+it, while every other build pulls Docker's official image.
+
+The copy of this interface that remained in `futuresmart-agent-ui` (`apps/nl2sql` and the routes
+wrapping it) was removed there (PR 255); nothing served it and nothing in it was unported.
+
+This closed the development cycle: the weekly model evaluation now runs only on demand, and
+[product capabilities](../product-capabilities.md) summarises what exists today, hosted and
+standalone, with links to each guide.
+
+Verified on production: Full logs on a live answer and on a reopened conversation (seven
+operations each), API task definition 218 built through the repository buildspec, and the shell
+and product pages after the removal. Evidence:
+`docs/improvements/evidence/2026-10-26-full-logs-and-cleanup.json`.

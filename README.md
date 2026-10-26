@@ -10,7 +10,7 @@ Whether you want to explore business data, build an AI-powered application, or
 adapt a complete database agent to your own requirements, you can use the
 hosted application, deploy it yourself, or integrate it through its API.
 
-**[Try the live application →](https://futuresmart.ai/solutions/database-agent)** · [Developer docs](https://futuresmart.ai/docs/database-agent) · [Run it locally](#install) · [Explore the API](docs/api.md)
+**[Try the live application →](https://futuresmart.ai/solutions/database-agent)** · [Developer docs](https://futuresmart.ai/docs/database-agent) · [Run it locally](#install) · [Explore the API](docs/api.md) · [What it can do today](docs/product-capabilities.md)
 
 Open source · Apache-2.0 · Self-hostable
 
@@ -157,6 +157,7 @@ you intend to erase this installation's data.
 
 ## Guides and checks
 
+- [Product capabilities: what exists, hosted vs standalone, and how to use it](docs/product-capabilities.md)
 - [Configuration and authentication](docs/configuration.md)
 - [Direct product API and OpenAPI reference](docs/api.md)
 - [MCP server for Claude Code and other MCP clients](docs/mcp.md)

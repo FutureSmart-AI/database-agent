@@ -1,0 +1,42 @@
+{
+  "id": "DA-022",
+  "date_IST": "2026-10-26",
+  "scope": "Signed-in walkthrough of the hosted interface after DA-021, the fix it found, removal of the last copy of the UI outside this repository, and the release-build registry fix.",
+  "hosted_walkthrough": {
+    "where": "app.futuresmart.ai/database-agent/ in Pradip's signed-in Chrome, free sample-data agent NL2SQL_5FAF6E46 (Cedar Lane)",
+    "sample_data_entry": "Try with sample data opens the sample agent",
+    "answer": "top five customers by spend: correct SQL, answer and table (Lucas Thompson $9,953.07 first)",
+    "follow_ups": "non-cancelled orders only; 2024 question returns 0 rows (data covers 2025-01-01..2025-12-31); December 2025 = 844 orders",
+    "saved_conversation": "reopened from the sidebar with every turn and result",
+    "report_a_problem": "RPT_7B3646F0 filed with a 2-turn snapshot, then closed as not_a_bug",
+    "share_api": "Share -> API on a test agent shows https://futuresmart.ai/database-agent/api/v1/agents/<id>/chat; 401 without a key; openapi.json 200. Share is disabled on example agents by design."
+  },
+  "defect_found": {
+    "symptom": "Full logs listed 3 of the 7 operations an answer paid for, named the model on one step only, and showed no usage at all on a reopened conversation.",
+    "root_cause": "The UI read only the node events it knew by name, and the usage block the API returned was not stored with the turn, so saved replay had nothing to return.",
+    "fix": "PR 116 (merged f3dc5298): the chat paths compute the usage block once, store it with the turn and return the same object; saved replay returns it; Full logs lists every usage node with its model under a 'Cost by operation' total that matches.",
+    "tests": "backend tests/backend/test_session_scope.py 19 OK (6 new, all red on the old code); frontend 858/858, tsc clean",
+    "production": "frontend release.txt f3dc5298; API nl2sql-agent:217 COMPLETED. Live answer: 7 operations, 7,216 tokens, about $0.0094; reopened conversation: 7 operations, 14.71 s, 7,803 tokens, about $0.0037 (screenshots in the session)."
+  },
+  "release_build_registry": {
+    "problem": "CodeBuild's anonymous Docker Hub pull of python:3.11-slim returned 429. PR 117 (3b22cc1) moved the base image to AWS's public mirror, claiming it had no anonymous limit; that was wrong: the mirror returned 429 to GitHub's runners twice (public standalone-product run 40284657424, verify job).",
+    "fix": "PR 118 (merged 57a417e): backend/Dockerfile takes ARG PYTHON_IMAGE (default Docker Hub, which serves GitHub's runners); deploy/codebuild/api-buildspec.yml logs in to ECR Public and passes the mirror image, so each builder pulls from the registry that serves it. IAM inline policy nl2sql-agent-build-ecr-public-login added to the CodeBuild role. The CodeBuild project now reads deploy/codebuild/api-buildspec.yml instead of an inline buildspec.",
+    "proof": "build nl2sql-agent-build:9a557b7b SUCCEEDED from origin/main 57a417e using deploy/codebuild/api-buildspec.yml (log: ecr-public login, FROM public.ecr.aws/docker/library/python:3.11-slim); API nl2sql-agent:218 COMPLETED; live answer 844 December 2025 orders, 7 operations, 7,424/241 tokens, $0.003253, cost_complete true."
+  },
+  "old_ui_copy_removed": {
+    "repository": "FutureSmart-AI/futuresmart-agent-ui",
+    "pr": "PR 255, merged fdb6b408",
+    "why_safe": "The copy was taken into the standalone UI at dcca451c, still the last commit touching apps/nl2sql, so nothing was unported; CloudFront E2LZUHAF1FR08 serves /database-agent* and /nl2sql* from fs-app-nl2sql-prod, never from the shell bucket.",
+    "removed": "apps/nl2sql, src/app/database-agent, src/app/nl2sql, its Cypress suite, analytics contract generator, demo spec, package scripts, PR CI step, ~/* alias, theme import, NL2SQL ClickUp doc mapping",
+    "kept": "src/components/nl2sql, src/components/conversations/nl2sql, /dashboard/nl2sql, packages/chat-core, apps/doc-intelligence",
+    "moved_here": "UI coding standards (frontend/AGENTS.md) and UI flow docs (internal/frontend-api-flows/)",
+    "after_merge": "shell prod deploy succeeded; agent.futuresmart.ai /, /dashboard/, /dashboard/nl2sql/ and app.futuresmart.ai /database-agent/, /nl2sql/, /document-intelligence/ all 200"
+  },
+  "public_repository": {
+    "release_commit": "3be66a0 from 57a417e",
+    "ci": "standalone-product run 40298239973: all 7 jobs success on attempt 2; attempt 1 failed one frontend test (NewAgentWizard 'names the missing fields'), which passed 15/15 locally and on rerun; recorded as DA-NEXT-006"
+  },
+  "ownership": "FutureSmart-AI/fs-agent-nl2sql is the only development repository; hosted UI (frontend-deploy.yml, OIDC role trusting only its main) and hosted API (CodeBuild nl2sql-agent-build) build from it; database-agent-ui is archived with deploys off and its role deleted; database-agent is export-only under the 'Releases come from the development repository' ruleset.",
+  "evaluation_schedule": "Weekly schedule removed from .github/workflows/model-evaluation.yml on 2026-10-26 (cycle close); workflow_dispatch, datasets, configs, runners, LangSmith datasets/experiments and tests unchanged. The last scheduled run (40289669682, 2026-10-26 08:03 UTC) failed before asking anything: it built the PR 117 Dockerfile and hit the public.ecr.aws 429 that PR 118 fixed.",
+  "capabilities_document": "docs/product-capabilities.md, linked from README.md (exported to the public repository)"
+}

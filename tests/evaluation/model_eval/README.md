@@ -43,8 +43,9 @@ to the evaluation key.
 
 ## Running
 
-On demand or weekly (Monday 02:30 UTC) in GitHub Actions: **Model evaluation** workflow,
-inputs `configs` and `repeats`. It needs the repository secrets `MODEL_EVAL_OPENAI_API_KEY`
+On demand in the development repository's GitHub Actions: **Model evaluation** workflow
+(Run workflow), inputs `configs` and `repeats`. The weekly schedule was switched off on
+2026-10-26; nothing runs automatically. It needs the repository secrets `MODEL_EVAL_OPENAI_API_KEY`
 and `MODEL_EVAL_LANGSMITH_API_KEY`. The run's artifact holds `results-<config>.jsonl` (every
 answer, SQL, rows-check, verdict, per-node usage), `run-<config>.json` (config/dataset hashes,
 git SHA, LangSmith experiment) and `summary.json` / `summary.md`.
