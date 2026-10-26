@@ -224,6 +224,8 @@ interface Nl2sqlWireMessage {
   debug_info?: Nl2sqlDebugInfo | null;
   graph_output?: Nl2sqlChartOutput | null;
   chart_output?: Nl2sqlChartOutput | null;
+  /** The answer's stored `usage` block; null for turns saved before it was kept. */
+  usage?: Record<string, unknown> | null;
 }
 
 /**
@@ -261,12 +263,16 @@ export async function fetchNl2sqlSession(
       // nothing, and one that reports them keeps them across a reload.
       trace_id: message.trace_id ?? null,
       is_answered: message.is_answered ?? null,
-      debug_info: message.debug_info
-        ? JSON.stringify({
-            ...message.debug_info,
-            ...(block ? { nl2sql: block } : {}),
-          })
-        : null,
+      // `usage` (latency, tokens, estimated cost per operation) rides inside
+      // `debug_info`, where the run log reads it on a live turn too.
+      debug_info:
+        message.debug_info || message.usage
+          ? JSON.stringify({
+              ...message.debug_info,
+              ...(message.usage ? { usage: message.usage } : {}),
+              ...(block ? { nl2sql: block } : {}),
+            })
+          : null,
       chart_output: chart ? JSON.stringify({ nl2sql: chart }) : null,
     };
   });

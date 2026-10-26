@@ -58,6 +58,9 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
         self.reserve = AsyncMock()
         self.cap = AsyncMock()
         self.demo_user = None
+        self.persist = AsyncMock()
+        self.usage = None
+        self.built = {}
         self.endpoint = load_function('api/v1/routers/chat.py', 'chat_with_agent',
             Path=Path, Query=Query, Depends=Depends, BackgroundTasks=BackgroundTasks,
             ChatRequest=self.schemas.ChatRequest, Request=Request,
@@ -72,11 +75,11 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
             ensure_session_belongs_to_agent=self.guard, get_past_messages_safe=self.history,
             get_agent_runtime_db=AsyncMock(return_value=({'db_id': 'db'}, 0)),
             run_agent_flow=self.flow, _generate_follow_up_safe=AsyncMock(return_value=None),
-            maybe_upload_csv_export=AsyncMock(return_value=None), persist_chat_logs=AsyncMock(),
+            maybe_upload_csv_export=AsyncMock(return_value=None), persist_chat_logs=self.persist,
             persist_health_event=AsyncMock(), _owner_credential_error=AsyncMock(return_value=None),
-            answer_usage=lambda *args: None, get_node_events=lambda result: [],
-            build_chat_response=lambda result, body, session_id, *rest, **options: {'session_id': session_id,
-                                                                                   'response': result['response']})
+            answer_usage=lambda *args: self.usage, get_node_events=lambda result: [],
+            build_chat_response=lambda result, body, session_id, *rest, **options: (
+                self.built.update(options) or {'session_id': session_id, 'response': result['response']}))
 
     async def ask(self, agent_id, session_id):
         body = self.schemas.ChatRequest(query='how many orders?', session_id=session_id)
@@ -106,6 +109,13 @@ class SessionScopeTests(unittest.IsolatedAsyncioTestCase):
         session_id, _, agent_id, _ = self.history.await_args.args
         self.assertEqual((session_id, agent_id), ('chat-service-thread', 'agent-a'))
         self.flow.assert_awaited_once()
+
+    async def test_the_stored_turn_keeps_the_usage_the_answer_returned(self):
+        self.usage = {'latency_ms': 1200, 'estimated_cost_usd': 0.0042, 'nodes': []}
+        response = await self.ask('agent-b', 'session-of-b')
+        self.assertEqual(response.status_code, 200)
+        self.assertIs(self.persist.await_args.args[-1], self.usage)
+        self.assertIs(self.built['usage'], self.usage)
 
     async def test_own_session_continues(self):
         response = await self.ask('agent-b', 'session-of-b')
@@ -184,6 +194,48 @@ class ReplayVisibilityTests(unittest.IsolatedAsyncioTestCase):
     async def test_callers_must_state_the_settings(self):
         with self.assertRaises(TypeError):
             await replay_function([stored_row()])('s1')
+
+
+USAGE = {'latency_ms': 11140, 'input_tokens': 9861, 'output_tokens': 399, 'estimated_cost_usd': 0.010929,
+         'cost_complete': True, 'price_table': 'openai-standard-2026-10-25',
+         'nodes': [{'node': 'sql_gen', 'model': 'gpt-6.1-sol', 'input_tokens': 3714, 'output_tokens': 112},
+                   {'node': 'other_calls', 'model': 'gpt-6-luna', 'input_tokens': 1179, 'output_tokens': 59}]}
+
+
+class ReplayUsageTests(unittest.IsolatedAsyncioTestCase):
+    """A saved answer keeps the latency, tokens and estimated cost its live answer reported."""
+
+    async def test_stored_usage_replays_under_every_setting(self):
+        row = stored_row(debug_info={'sql_query': SQL, 'db_result': RESULT, 'usage': USAGE})
+        for show_sql, show_rows in ((True, True), (False, False)):
+            with self.subTest(show_sql_query=show_sql, show_db_result=show_rows):
+                user, assistant = await replay_function([row])(
+                    's1', agent_id='agent-visible', show_sql_query=show_sql, show_db_result=show_rows)
+                self.assertEqual(assistant['usage'], USAGE)
+                self.assertNotIn('usage', user)
+
+    async def test_turns_stored_without_usage_replay_none(self):
+        _, assistant = await replay_function([stored_row()])(
+            's1', agent_id='agent-visible', show_sql_query=True, show_db_result=True)
+        self.assertIsNone(assistant['usage'])
+
+
+class StoredUsageTests(unittest.TestCase):
+    """The block persisted for replay carries the same usage the live answer returned."""
+
+    def blocks(self, usage):
+        store = load_function('api/v1/utils/chat_helper.py', '_blocks_to_store',
+                              build_data_block=lambda columns, rows, row_limit=None: None,
+                              _tables_referenced_in_sql=lambda tables, sql: [])
+        return store({'sql_query': SQL}, types.SimpleNamespace(query='totals by region?'), usage)
+
+    def test_usage_is_stored_with_the_turn(self):
+        debug, _ = self.blocks(USAGE)
+        self.assertEqual(debug['usage'], USAGE)
+
+    def test_no_usage_stores_no_key(self):
+        debug, _ = self.blocks(None)
+        self.assertNotIn('usage', debug)
 
     def test_every_product_caller_passes_both_settings(self):
         """A gate on the call sites: no route can serve saved turns without the agent and its settings."""

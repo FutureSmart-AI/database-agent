@@ -459,6 +459,12 @@ async def get_session_data(session_id: str, *, agent_id: str, show_sql_query: bo
 					assistant_message["result"] = (
 						stored_debug.get("db_result") if show_db_result and isinstance(stored_debug, dict) else None
 					)
+					# The answer's latency, tokens and estimated cost, as the live answer returned
+					# them. Not gated by the visibility flags: like the live `usage`, it describes
+					# the answer, not the data. None for turns stored before it was kept.
+					assistant_message["usage"] = (
+						stored_debug.get("usage") if isinstance(stored_debug, dict) else None
+					)
 					session_data.append(assistant_message)
 		logger.info(f"Returning {len(session_data)} total messages for session {session_id}")
 		return session_data

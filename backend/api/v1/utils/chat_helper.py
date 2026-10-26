@@ -520,7 +520,7 @@ async def maybe_upload_csv_export(result: dict, agent_id: str, session_id: str, 
     return None
 
 
-def _blocks_to_store(result: dict, body: Any) -> Tuple[Optional[dict], Optional[dict]]:
+def _blocks_to_store(result: dict, body: Any, usage: Optional[dict] = None) -> Tuple[Optional[dict], Optional[dict]]:
     """The (debug, chart) blocks to persist for this turn, for LATER replay.
 
     Deliberately duplicates the shaping in `build_chat_response` rather than sharing a
@@ -537,6 +537,9 @@ def _blocks_to_store(result: dict, body: Any) -> Tuple[Optional[dict], Optional[
       turn cannot be re-run. Whatever serves this later applies the settings then.
     * No `export_url`: it is a short-lived presigned link and would be expired by the
       time anyone replayed it.
+
+    ``usage`` is the same block the live answer returned (latency, tokens, estimated
+    cost per operation), so a saved conversation's Full logs reports what it cost.
     """
     runtime = result.get("runtime_db_details") or {}
     sql_query = result.get("sql_query", "")
@@ -551,6 +554,8 @@ def _blocks_to_store(result: dict, body: Any) -> Tuple[Optional[dict], Optional[
             result.get("db_columns"), result.get("db_result"), row_limit=None
         ),
     }
+    if usage:
+        debug_block["usage"] = usage
     if result.get("cross_db"):
         debug_block["cross_db"] = True
         debug_block["selected_db_ids"] = [
@@ -574,7 +579,7 @@ def _blocks_to_store(result: dict, body: Any) -> Tuple[Optional[dict], Optional[
 async def persist_chat_logs(
     session_id: str, user_id: str, agent_id: str, chat_id: str,
     body: Any, result: dict, agent_elapsed: float, db_fetch_elapsed: float,
-    include_debug_block: bool
+    include_debug_block: bool, usage: Optional[dict] = None,
 ) -> None:
     """Persist NL2SQL logs to database.
 
@@ -601,7 +606,7 @@ async def persist_chat_logs(
         result.get("db_result", []), result.get("response", ""),
         graph_output_payload, agent_elapsed, db_fetch_elapsed,
         result.get("total_tokens", 0), bool(body.chart_output), include_debug_block,
-        bool(is_answered), *_blocks_to_store(result, body),
+        bool(is_answered), *_blocks_to_store(result, body, usage),
     )
 
 

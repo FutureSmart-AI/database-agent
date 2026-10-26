@@ -17,12 +17,29 @@ import type { Nl2sqlView } from "@/platform/components/conversations/nl2sql/norm
  * query touched them, the query itself, what running it returned, and what the
  * chart step decided.
  *
- * Two of the fields it is built from only exist on a live turn. `usage` — the
- * per-service latency, tokens and cost — rides the final stream event and is
- * not stored, so a thread read back later has the steps and their outcomes but
- * no cost. `partial` says which of the two this is, and the panel says so
- * rather than printing zeroes.
+ * `usage` — the run's latency, tokens and estimated cost, per operation — rides
+ * the final stream event and is stored with the turn, so a thread read back
+ * later reports it too. Turns stored before it was kept have none: `partial`
+ * says so, and the panel says so rather than printing zeroes.
  */
+
+/**
+ * One operation of the run, as the service accounted for it (`usage.nodes`).
+ *
+ * The steps above only carry the calls they can be tied to; this is the whole
+ * ledger — routing, result checks and calls no step recorded included — so the
+ * breakdown always adds up to the total it sits under.
+ */
+export interface RunLogOperation {
+  key: string;
+  label: string;
+  model?: string;
+  latencyMs?: number;
+  inputTokens?: number;
+  outputTokens?: number;
+  calls?: number;
+  costUsd?: number;
+}
 
 export interface RunLogCall {
   service: string;
@@ -73,6 +90,8 @@ export interface RunLog {
    */
   traceId?: string;
   model?: string;
+  /** Every operation the run's usage block accounted for, in run order. */
+  operations?: RunLogOperation[];
   /** A turn with no usage block: steps, but no tokens or cost. */
   partial: boolean;
   /** The ids this turn carries, for support and for the service's own logs. */
@@ -110,6 +129,50 @@ const NODE_FOR_SERVICE: Record<string, string> = {
   chart: "graph_agent",
   answer: "final_answer",
 };
+
+/** What each `usage.nodes` entry did, in the log's own words. */
+const OPERATION_LABEL: Record<string, string> = {
+  router: "Routed the question",
+  db_router: "Chose the database",
+  select_table: "Selected tables",
+  select_and_fewshots: "Selected tables and examples",
+  cross_db_fanout: "Queried each database",
+  cross_db_merge: "Merged the databases' results",
+  sql_gen: "Wrote the query",
+  sql_exec: "Ran the query",
+  check_pandas: "Checked the result",
+  invoke_pandas: "Post-processed the result",
+  graph_agent: "Built the chart",
+  final_answer: "Wrote the answer",
+  other_calls: "Other model calls",
+};
+
+/**
+ * The run's whole ledger. An operation the log has no words for keeps the
+ * service's own name rather than being dropped, so nothing the service charged
+ * for falls out of the breakdown.
+ */
+function operationsOf(nodes: unknown[] | null): RunLogOperation[] | undefined {
+  if (!nodes) return undefined;
+  const operations = nodes.flatMap((node, index): RunLogOperation[] => {
+    const entry = asObject(node);
+    const name = str(entry?.node);
+    if (!entry || !name) return [];
+    return [
+      {
+        key: `${name}-${index}`,
+        label: OPERATION_LABEL[name] ?? name,
+        model: str(entry.model),
+        latencyMs: num(entry.latency_ms),
+        inputTokens: num(entry.input_tokens),
+        outputTokens: num(entry.output_tokens),
+        calls: num(entry.calls),
+        costUsd: num(entry.estimated_cost_usd),
+      },
+    ];
+  });
+  return operations.length ? operations : undefined;
+}
 
 const nodeCallOf = (
   usage: Record<string, unknown> | null,
@@ -512,6 +575,7 @@ export function readRunLog({
         : []),
     ],
     model: callOf(usage, "sql_generation")?.model ?? str(debug?.model),
+    operations: operationsOf(nodes),
     // No usage block means the turn cannot report tokens or cost — every
     // deployed turn today, live or stored.
     partial: !usage,

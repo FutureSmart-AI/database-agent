@@ -5,7 +5,13 @@ import { useState } from "react";
 import Icon from "@/components/Icon";
 
 import { LOG_DOT, LOG_LABEL } from "./constants";
-import { formatCost, formatMs, type RunLog, type RunLogStep } from "./runLog";
+import {
+  formatCost,
+  formatMs,
+  type RunLog,
+  type RunLogOperation,
+  type RunLogStep,
+} from "./runLog";
 
 /**
  * Everything the run did in the background, folded away under the answer.
@@ -116,6 +122,13 @@ export default function FullLogs({ log }: { log: RunLog }) {
             </div>
           )}
 
+          {!!log.operations?.length && (
+            <OperationBreakdown
+              operations={log.operations}
+              totals={log.totals}
+            />
+          )}
+
           <ol
             className="m-0 flex list-none flex-col gap-0 p-0"
             data-demo="log-steps"
@@ -141,6 +154,119 @@ export default function FullLogs({ log }: { log: RunLog }) {
   );
 }
 
+const tokensOf = (input?: number, output?: number) =>
+  input || output
+    ? `${(input ?? 0).toLocaleString()} in / ${(output ?? 0).toLocaleString()} out`
+    : "—";
+
+/**
+ * Every operation the run paid for, with the model that did it.
+ *
+ * The steps below carry only the calls they can be tied to. This is the whole
+ * ledger — routing, the result check, calls no step recorded — so a reader can
+ * see where the time and the money went and that the rows add up to the total.
+ */
+function OperationBreakdown({
+  operations,
+  totals,
+}: {
+  operations: RunLogOperation[];
+  totals: RunLog["totals"];
+}) {
+  const cell = "px-3.5 py-1 text-[11px]";
+  const figure = `${cell} whitespace-nowrap text-right font-mono text-n2s-ink-2`;
+  return (
+    <div
+      className="overflow-x-auto border-b border-n2s-line"
+      data-demo="cost-by-operation"
+    >
+      <table className="w-full border-collapse">
+        <caption className="px-3.5 pt-2 pb-1 text-left text-[11px] font-semibold text-n2s-ink-2">
+          Cost by operation
+        </caption>
+        <thead>
+          <tr className="text-n2s-ink-3">
+            <th scope="col" className={`${cell} text-left font-medium`}>
+              Operation
+            </th>
+            <th scope="col" className={`${cell} text-left font-medium`}>
+              Model
+            </th>
+            <th scope="col" className={`${cell} text-right font-medium`}>
+              Time
+            </th>
+            <th scope="col" className={`${cell} text-right font-medium`}>
+              Tokens
+            </th>
+            <th scope="col" className={`${cell} text-right font-medium`}>
+              Est. cost
+            </th>
+          </tr>
+        </thead>
+        <tbody>
+          {operations.map((operation) => (
+            <tr key={operation.key} className="border-t border-n2s-line">
+              <th
+                scope="row"
+                className={`${cell} text-left font-normal text-n2s-ink`}
+              >
+                {operation.label}
+                {!!operation.calls && operation.calls > 1 && (
+                  <span className="text-n2s-ink-3">
+                    {" "}
+                    · {operation.calls} calls
+                  </span>
+                )}
+              </th>
+              <td className={`${cell} font-mono text-n2s-ink-2`}>
+                {operation.model ?? "—"}
+              </td>
+              <td className={figure}>
+                {operation.latencyMs !== undefined
+                  ? formatMs(operation.latencyMs)
+                  : "—"}
+              </td>
+              <td className={figure}>
+                {tokensOf(operation.inputTokens, operation.outputTokens)}
+              </td>
+              <td className={figure}>
+                {operation.costUsd !== undefined
+                  ? `≈${formatCost(operation.costUsd)}`
+                  : "—"}
+              </td>
+            </tr>
+          ))}
+        </tbody>
+        <tfoot>
+          <tr className="border-t border-n2s-line bg-n2s-card-2 font-semibold">
+            <th scope="row" className={`${cell} text-left text-n2s-ink`}>
+              Total
+            </th>
+            <td className={cell} />
+            <td className={figure}>
+              {totals?.latencyMs !== undefined
+                ? formatMs(totals.latencyMs)
+                : "—"}
+            </td>
+            <td className={figure}>
+              {totals?.totalTokens
+                ? `${totals.totalTokens.toLocaleString()} tokens`
+                : "—"}
+            </td>
+            <td className={figure}>
+              {totals?.costUsd !== undefined
+                ? `≈${formatCost(totals.costUsd)}`
+                : totals?.costIncomplete
+                  ? "not available"
+                  : "—"}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+    </div>
+  );
+}
+
 function LogStep({
   step,
   index,
@@ -154,6 +280,10 @@ function LogStep({
 }) {
   const lines = step.lines ?? [];
   const cost = [
+    // The model that made the call, unless the step's summary already names it.
+    ...(step.call?.model && step.detail !== step.call.model
+      ? [step.call.model]
+      : []),
     ...(step.call?.latencyMs !== undefined
       ? [formatMs(step.call.latencyMs)]
       : []),

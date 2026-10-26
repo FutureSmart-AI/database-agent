@@ -363,6 +363,7 @@ async def chat_with_agent(
                         chat_id=chat_id,
                     )
                     agent_elapsed = time.time() - agent_start_time
+                    usage = answer_usage(get_node_events(result), agent_elapsed * 1000, result.get("llm_usage"))
                     final_text = result.get("response", "")
 
                     for sentence in filter(None, [s.strip() for s in final_text.split('.')]):
@@ -371,14 +372,14 @@ async def chat_with_agent(
                     follow_up_qs, export_url, _, _ = await asyncio.gather(
                         _generate_follow_up_safe(body, owner_email, agent_id, past_messages, result),
                         maybe_upload_csv_export(result, agent_id, session_id, chat_id),
-                        persist_chat_logs(session_id, user_id, agent_id, chat_id, body, result, agent_elapsed, db_fetch_elapsed, include_debug_block),
+                        persist_chat_logs(session_id, user_id, agent_id, chat_id, body, result, agent_elapsed, db_fetch_elapsed, include_debug_block, usage),
                         persist_health_event(session_id, user_id, agent_id, chat_id, request_id,
                                              result, agent_elapsed, db_fetch_elapsed,
                                              owner_email, auth_type),
                     )
                     result["follow_up_questions"] = follow_up_qs
                     final_response = build_chat_response(result, body, session_id, chat_id, show_sql_query, show_db_result, export_url,
-                                                     usage=answer_usage(get_node_events(result), agent_elapsed * 1000, result.get("llm_usage")))
+                                                     usage=usage)
                     if demo_status is not None:
                         final_response["demo_allowance"] = demo_status
                         await close_demo_question(chat_id, answered=True)
@@ -417,18 +418,19 @@ async def chat_with_agent(
                 chat_id=chat_id,
             )
             agent_elapsed = time.time() - agent_start_time
+            usage = answer_usage(get_node_events(result), agent_elapsed * 1000, result.get("llm_usage"))
 
             follow_up_qs, export_url, _, _ = await asyncio.gather(
                 _generate_follow_up_safe(body, owner_email, agent_id, past_messages, result),
                 maybe_upload_csv_export(result, agent_id, session_id, chat_id),
-                persist_chat_logs(session_id, user_id, agent_id, chat_id, body, result, agent_elapsed, db_fetch_elapsed, include_debug_block),
+                persist_chat_logs(session_id, user_id, agent_id, chat_id, body, result, agent_elapsed, db_fetch_elapsed, include_debug_block, usage),
                 persist_health_event(session_id, user_id, agent_id, chat_id, request_id,
                                      result, agent_elapsed, db_fetch_elapsed,
                                      owner_email, auth_type),
             )
             result["follow_up_questions"] = follow_up_qs
             final_response = build_chat_response(result, body, session_id, chat_id, show_sql_query, show_db_result, export_url,
-                                                 usage=answer_usage(get_node_events(result), agent_elapsed * 1000, result.get("llm_usage")))
+                                                 usage=usage)
             if demo_status is not None:
                 final_response["demo_allowance"] = demo_status
                 await close_demo_question(chat_id, answered=True)

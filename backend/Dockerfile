@@ -1,4 +1,6 @@
-FROM python:3.11-slim
+# The official Docker Hub image, served from AWS's public mirror: identical
+# content, and no anonymous pull limit (CodeBuild hit Docker Hub's 429).
+FROM public.ecr.aws/docker/library/python:3.11-slim
 
 WORKDIR /app
 
