@@ -8,7 +8,7 @@
     "internal evidence and assets",
     "hosted deployment, rollback, evaluation and publication workflows"
   ],
-  "source_commit": "3b22cc10b2e1eafeb506d288fb12c8c1c48bca7f",
+  "source_commit": "57a417eae38884e92824a6de66cea97adbb4f91b",
   "files": {
     ".env.example": "16da20903b128918fa270f7475fc5cc22d599bee503978fa3d375a4b458fbbd4",
     ".gitattributes": "b2ce1550ab9f03c0675a1d7d4a2f6ae13917b1ece5ba137481482fb89cea4d83",
@@ -19,7 +19,7 @@
     "NOTICE": "340c69aeeda61c51229c3ba41df77bb423699fa35898e6f17cddf44fffa8cb39",
     "README.md": "2bedd4bd26584583325b97ece5e1c10d581f72c0de8f6c3829cea2d369bf9497",
     "backend/.dockerignore": "0cbc38405362d1be07ecaaf5bad3af1f645e395f47825d6ba47900c73c1a7d18",
-    "backend/Dockerfile": "5cdb4cc0b8bc4ebde9fcb7fbf205a9a4d163f8e94b762359fcff0e45f53b1d50",
+    "backend/Dockerfile": "1d358b2f6ee4858ae924e61d470a5c3701343ea79fec8b09a3342d5309690e5c",
     "backend/agent/__init__.py": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
     "backend/agent/config/__init__.py": "8304fb8d2f6e7328edb6983a376276a50fe67f1e806572ae33f40e3d7688a2c1",
     "backend/agent/config/hybrid_entity_resolver_settings.py": "e6f28661ac481154774fa5c16b7b69ac46d9acb600156f6cbfc55d803fe7850a",
@@ -317,6 +317,7 @@
     "backend/utils/tables_helper.py": "7ecaadb616924db72f1a02aabe891889eb70a6c8cae6fb811678fbd8f7d7f10e",
     "compose.yaml": "b7f5a470b42e573321b561833a68ea7d29163e377ffd8e21c0863036ff3ceb2f",
     "deploy/aws/render_task.py": "74b3040b0a3734da7c4e04dd6e97dbfc0dc0b0e3b859b53982cc2399def1a3a3",
+    "deploy/codebuild/api-buildspec.yml": "5905ee214303bade162259c8569705add76ea39295375c01a5d3e8dc162b02a3",
     "deploy/configure.py": "9fdc1e24bff896e9e2f9016db95863865c3881c8c49d3f10cdd477516d029e31",
     "deploy/demo/ecommerce/agent.json": "eaa86654581bfb0e5acdc2281c707136122e39f6f1a443f3c21e92c21c24b29f",
     "deploy/demo/ecommerce/build.py": "cd03b87031860b68a9c195a6b38a11ece433fc0b9b8819d9d403186577fb268c",

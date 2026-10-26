@@ -1,0 +1,25 @@
+# CodeBuild project nl2sql-agent-build: builds the hosted API image from a
+# `git archive` of this repository and pushes it to the private registry.
+# Release steps around it: internal/plans/HOSTED-RELEASE.md.
+#
+# The base image is pulled from AWS's public mirror of Docker's official images,
+# logged in: Docker Hub refuses anonymous pulls from CodeBuild's shared
+# addresses (429), and the mirror throttles anonymous pulls too.
+version: 0.2
+env:
+  variables:
+    IMAGE_REPOSITORY: nl2sql-agent/production
+    PYTHON_IMAGE: public.ecr.aws/docker/library/python:3.11-slim
+phases:
+  pre_build:
+    commands:
+      - ACCOUNT=$(aws sts get-caller-identity --query Account --output text)
+      - REGISTRY="$ACCOUNT.dkr.ecr.$AWS_DEFAULT_REGION.amazonaws.com"
+      - aws ecr get-login-password --region "$AWS_DEFAULT_REGION" | docker login --username AWS --password-stdin "$REGISTRY"
+      - aws ecr-public get-login-password --region us-east-1 | docker login --username AWS --password-stdin public.ecr.aws
+  build:
+    commands:
+      - docker build --build-arg PYTHON_IMAGE="$PYTHON_IMAGE" -t "$REGISTRY/$IMAGE_REPOSITORY:$IMAGE_TAG" backend
+  post_build:
+    commands:
+      - docker push "$REGISTRY/$IMAGE_REPOSITORY:$IMAGE_TAG"

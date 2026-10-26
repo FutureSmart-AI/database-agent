@@ -1,6 +1,9 @@
-# The official Docker Hub image, served from AWS's public mirror: identical
-# content, and no anonymous pull limit (CodeBuild hit Docker Hub's 429).
-FROM public.ecr.aws/docker/library/python:3.11-slim
+# Docker's official image. The hosted release build passes the same image from
+# AWS's public mirror (deploy/codebuild/api-buildspec.yml): Docker Hub refuses
+# anonymous pulls from CodeBuild's shared addresses, and the mirror throttles
+# GitHub's runners, so each pulls from the registry that serves it.
+ARG PYTHON_IMAGE=python:3.11-slim
+FROM ${PYTHON_IMAGE}
 
 WORKDIR /app
 
